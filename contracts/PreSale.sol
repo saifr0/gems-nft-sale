@@ -65,6 +65,12 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the node nft contract
     INodeNft public immutable nodeNft;
 
+    /// @notice The address of the GEMS contract
+    IERC20 public immutable GEMS;
+
+    /// @notice The address of the USDT contract
+    IERC20 public immutable USDT;
+
     /// @notice That buyEnabled or not
     bool public buyEnabled = true;
 
@@ -89,9 +95,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Gives info about address's permission
     mapping(address => bool) public blacklistAddress;
 
-    /// @notice Gives access info of the given token
-    mapping(IERC20 => bool) public allowedTokens;
-
     /// @dev Emitted when address of signer is updated
     event SignerUpdated(address oldSigner, address newSigner);
 
@@ -109,9 +112,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @dev Emitted when buying access changes
     event BuyEnableUpdated(bool oldAccess, bool newAccess);
-
-    /// @dev Emitted when token's access is updated
-    event AllowedTokenUpdated(IERC20 token, bool status);
 
     /// @dev Emitted when node nft price is updated
     event NodeNftPriceUpdated(uint256 oldPrice, uint256 newPrice);
@@ -164,18 +164,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Thrown when caller does not hold nft id
     error CallerNotOwner();
 
-    /// @notice Thrown when token is not allowed to use for purchases
-    error TokenNotAllowed();
-
     /// @dev Restricts when updating wallet/contract address with zero address
     modifier checkAddressZero(address which) {
         _checkAddressZero(which);
         _;
     }
 
-    /// @dev Checks buyEnabled,token allowed, user not blacklisted and time less than deadline, if not then reverts
-    modifier canBuy(IERC20 token, uint256 deadline) {
-        _canBuy(token, deadline);
+    /// @dev Checks buyEnabled and user not blacklisted, if yes then reverts
+    modifier canBuy() {
+        _canBuy();
         _;
     }
 
@@ -185,6 +182,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param burnWalletAddress The address of burn wallet
     /// @param signerAddress The address of signer wallet
     /// @param owner The address of owner wallet
+    /// @param gemsAddress The address gems contract
+    /// @param usdtAddress The address of usdt contract
     /// @param claimsAddress The address of claim contract
     /// @param minerNftAddress The address of miner nft contract
     /// @param nodeNftAddress The address of miner nft contract
@@ -197,6 +196,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         address burnWalletAddress,
         address signerAddress,
         address owner,
+        IERC20 gemsAddress,
+        IERC20 usdtAddress,
         IClaims claimsAddress,
         IMinerNft minerNftAddress,
         INodeNft nodeNftAddress,
@@ -209,6 +210,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         checkAddressZero(platformWalletAddress)
         checkAddressZero(burnWalletAddress)
         checkAddressZero(signerAddress)
+        checkAddressZero(address(gemsAddress))
+        checkAddressZero(address(usdtAddress))
         checkAddressZero(address(claimsAddress))
         checkAddressZero(address(minerNftAddress))
         checkAddressZero(address(nodeNftAddress))
@@ -228,6 +231,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         platformWallet = platformWalletAddress;
         burnWallet = burnWalletAddress;
         signerWallet = signerAddress;
+        GEMS = gemsAddress;
+        USDT = usdtAddress;
         claimsContract = claimsAddress;
         minerNft = minerNftAddress;
         nodeNft = nodeNftAddress;
@@ -236,17 +241,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         minerNFTPrices = minerNftPricesInit;
     }
 
-    /// @notice Purchases node nfts with token
-    /// @param token The token used for purchasing
+    /// @notice Purchases node nfts with GEMS
     /// @param quantity The amounts of node nfts to purchase
-    /// @param referenceTokenPrice The current price of token in 10 decimals
+    /// @param referenceTokenPrice The current price of GEMS in 10 decimals
     /// @param deadline The deadline is validity of the signature
     /// @param referenceNormalizationFactor The normalization factor
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
     function purchaseNodeNFT(
-        IERC20 token,
         uint256 quantity,
         uint256 referenceTokenPrice,
         uint256 deadline,
@@ -254,126 +257,44 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external canBuy(token, deadline) nonReentrant {
+    ) external canBuy nonReentrant {
+        if (block.timestamp > deadline) {
+            revert DeadlineExpired();
+        }
+
+        if (referenceTokenPrice == 0 || referenceNormalizationFactor == 0) {
+            revert ZeroValue();
+        }
         // The input must have been signed by the presale signer
-        _verifySignature(keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, token)), v, r, s);
-        (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(token, referenceTokenPrice, referenceNormalizationFactor);
-        uint256 purchaseAmount = (quantity * nodeNFTPrice * (10 ** normalizationFactor)) / latestPrice;
-        _calculateAndTransferAmounts(token, purchaseAmount);
+        _verifySignature(keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, GEMS)), v, r, s);
+        uint256 purchaseAmount = (quantity * nodeNFTPrice * (10 ** referenceNormalizationFactor)) / referenceTokenPrice;
+        _calculateAndTransferAmounts(GEMS, purchaseAmount);
         nodeNft.mint(msg.sender, quantity);
 
-        emit NodeNftPurchased({ token: token, tokenPrice: latestPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
+        emit NodeNftPurchased({ token: GEMS, tokenPrice: referenceTokenPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
     }
 
-    /// @notice Purchases miner nft with token
-    /// @param token The token used for purchasing
-    /// @param nodeNFTId The node nft id that user holds
-    /// @param referenceTokenPrice The current price of token in 10 decimals
-    /// @param deadline The deadline is validity of the signature
+    /// @notice Purchases miner nft with USDT
+    /// @param nodeNftId The node nft id that user holds
     /// @param quantities The amount of each miner nft that user will purchase
-    /// @param referenceNormalizationFactor The normalization factor
-    /// @param v The `v` signature parameter
-    /// @param r The `r` signature parameter
-    /// @param s The `s` signature parameter
-    function purchaseMinerNFT(
-        IERC20 token,
-        uint256 nodeNFTId,
-        uint256 referenceTokenPrice,
-        uint256 deadline,
-        uint256[3] calldata quantities,
-        uint8 referenceNormalizationFactor,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external canBuy(token, deadline) nonReentrant {
-        // The input must have been signed by the presale signer
-        _verifySignature(keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, token)), v, r, s);
+    function purchaseMinerNFT(uint256 nodeNftId, uint256[3] calldata quantities) external canBuy nonReentrant {
+        (uint256 purchaseAmount, uint256 latestPrice) = _purchase(nodeNftId, quantities, false);
+        _calculateAndTransferAmounts(USDT, purchaseAmount);
 
-        (uint256 purchaseAmount, uint256 latestPrice) = _purchaseMinerNft(
-            token,
-            nodeNFTId,
-            referenceTokenPrice,
-            quantities,
-            referenceNormalizationFactor,
-            false
-        );
-
-        _calculateAndTransferAmounts(token, purchaseAmount);
-
-        emit MinerNftPurchased({ token: token, tokenPrice: latestPrice, by: msg.sender, quantities: quantities, amountPurchased: purchaseAmount });
+        emit MinerNftPurchased({ token: USDT, tokenPrice: latestPrice, by: msg.sender, quantities: quantities, amountPurchased: purchaseAmount });
     }
 
-    /// @notice Purchases miner nft on discounted price
-    /// @param token The token used for purchasing
-    /// @param nodeNFTId The node nft id that user holds
-    /// @param referenceTokenPrice The current price of token in 10 decimals
-    /// @param deadline The deadline is validity of the signature
-    /// @param quantities The amount of each miner nft that user will purchase
-    /// @param percentages The leader's percentages
-    /// @param leaders The addresses of the leaders
-    /// @param referenceNormalizationFactor The normalization factor
-    /// @param code The code is used to verify signature of the user
-    /// @param v The `v` signature parameter
-    /// @param r The `r` signature parameter
-    /// @param s The `s` signature parameter
-    function purchaseMinerNFTDiscount(
-        IERC20 token,
-        uint256 nodeNFTId,
-        uint256 referenceTokenPrice,
-        uint256 deadline,
-        uint256[3] calldata quantities,
-        uint256[] calldata percentages,
-        address[] calldata leaders,
-        uint8 referenceNormalizationFactor,
-        string memory code,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external canBuy(token, deadline) nonReentrant {
-        // The input must have been signed by the presale signer
-        _verifySignature(
-            keccak256(abi.encodePacked(msg.sender, code, percentages, leaders, referenceNormalizationFactor, referenceTokenPrice, deadline, token)),
-            v,
-            r,
-            s
-        );
-
-        (uint256 purchaseAmount, uint256 latestPrice) = _purchaseMinerNft(
-            token,
-            nodeNFTId,
-            referenceTokenPrice,
-            quantities,
-            referenceNormalizationFactor,
-            true
-        );
-
-        _transferAndUpdateCommissions(token, purchaseAmount, leaders, percentages);
-
-        emit MinerNftPurchasedDiscounted({
-            token: token,
-            tokenPrice: latestPrice,
-            by: msg.sender,
-            quantities: quantities,
-            code: code,
-            amountPurchased: purchaseAmount,
-            leaders: leaders,
-            percentages: percentages
-        });
-    }
-
-    function _purchaseMinerNft(
-        IERC20 token,
-        uint256 nodeNFTId,
-        uint256 referenceTokenPrice,
-        uint256[3] calldata quantities,
-        uint8 referenceNormalizationFactor,
-        bool isDiscounted
-    ) private returns (uint256, uint256) {
-        if (nodeNft.ownerOf(nodeNFTId) != msg.sender) {
+    function _purchase(uint256 nodeNftId, uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
+        if (nodeNft.ownerOf(nodeNftId) != msg.sender) {
             revert CallerNotOwner();
         }
 
-        (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(token, referenceTokenPrice, referenceNormalizationFactor);
+        TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(USDT);
+
+        if (tokenInfo.latestPrice == 0 || tokenInfo.normalizationFactor == 0) {
+            revert ZeroValue();
+        }
+
         uint256 prices;
         uint256 quantityLength = quantities.length;
 
@@ -385,6 +306,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
                 minerNft.mint(msg.sender, i, quantity);
             }
         }
+
         _checkZeroValue(prices);
 
         if (isDiscounted) {
@@ -411,7 +333,50 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        return ((prices * (10 ** normalizationFactor)) / latestPrice, latestPrice);
+        return ((prices * (10 ** tokenInfo.normalizationFactor)) / tokenInfo.latestPrice, tokenInfo.latestPrice);
+    }
+
+    /// @notice Purchases miner nft on discounted price
+    /// @param nodeNftId The node nft id that user holds
+    /// @param deadline The deadline is validity of the signature
+    /// @param quantities The amount of each miner nft that user will purchase
+    /// @param percentages The leader's percentages
+    /// @param leaders The addresses of the leaders
+    /// @param code The code is used to verify signature of the user
+    /// @param v The `v` signature parameter
+    /// @param r The `r` signature parameter
+    /// @param s The `s` signature parameter
+    function purchaseMinerNFTDiscount(
+        uint256 nodeNftId,
+        uint256 deadline,
+        uint256[3] calldata quantities,
+        uint256[] calldata percentages,
+        address[] calldata leaders,
+        string memory code,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external canBuy nonReentrant {
+        // The input must have been signed by the presale signer
+        _verifySignature(keccak256(abi.encodePacked(msg.sender, code, percentages, leaders, deadline, USDT)), v, r, s);
+
+        if (block.timestamp > deadline) {
+            revert DeadlineExpired();
+        }
+
+        (uint256 purchaseAmount, uint256 latestPrice) = _purchase(nodeNftId, quantities, true);
+        _transferAndUpdateCommissions(purchaseAmount, leaders, percentages);
+
+        emit MinerNftPurchasedDiscounted({
+            token: USDT,
+            tokenPrice: latestPrice,
+            by: msg.sender,
+            quantities: quantities,
+            code: code,
+            amountPurchased: purchaseAmount,
+            leaders: leaders,
+            percentages: percentages
+        });
     }
 
     /// @notice Changes access of buying
@@ -515,34 +480,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         nodeNFTPrice = newPrice;
     }
 
-    /// @notice Updates the status of the tokens for purchases
-    /// @param tokens The addresses of the tokens
-    /// @param statuses The updated status of the tokens
-    function updateAllowedTokens(IERC20[] calldata tokens, bool[] calldata statuses) external onlyOwner {
-        uint256 tokensLength = tokens.length;
-
-        if (tokensLength != statuses.length) {
-            revert ArrayLengthMismatch();
-        }
-
-        for (uint256 i; i < tokensLength; ++i) {
-            IERC20 token = tokens[i];
-            bool status = statuses[i];
-
-            if (address(token) == address(0)) {
-                revert ZeroAddress();
-            }
-
-            if (allowedTokens[token] == status) {
-                revert IdenticalValue();
-            }
-
-            allowedTokens[token] = status;
-
-            emit AllowedTokenUpdated({ token: token, status: status });
-        }
-    }
-
     /// @dev Calculates and transfers amount to wallets
     function _calculateAndTransferAmounts(IERC20 token, uint256 amount) private {
         _checkZeroValue(amount);
@@ -596,8 +533,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         }
     }
 
-    /// @dev Checks buyEnabled,token allowed, user not blacklisted and time less than deadline, if not then reverts
-    function _canBuy(IERC20 token, uint256 deadline) private view {
+    /// @dev Checks buyEnabled, user not blacklisted , if yes then reverts
+    function _canBuy() private view {
         if (!buyEnabled) {
             revert BuyNotEnabled();
         }
@@ -605,18 +542,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         if (blacklistAddress[msg.sender]) {
             revert Blacklisted();
         }
-
-        if (!allowedTokens[token]) {
-            revert TokenNotAllowed();
-        }
-
-        if (block.timestamp > deadline) {
-            revert DeadlineExpired();
-        }
     }
 
     /// @dev Calculates, transfers and update commissions
-    function _transferAndUpdateCommissions(IERC20 token, uint256 amount, address[] memory leaders, uint256[] memory percentages) private {
+    function _transferAndUpdateCommissions(uint256 amount, address[] memory leaders, uint256[] memory percentages) private {
         _checkZeroValue(amount);
         uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
         uint256 platformAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
@@ -654,15 +583,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             platformAmount += (((amount * CLAIMS_PERCENTAGE_PPM) / PPM) - equivalence);
         }
 
-        token.safeTransferFrom(msg.sender, projectWallet, projectAmount);
-        token.safeTransferFrom(msg.sender, platformWallet, platformAmount);
-        token.safeTransferFrom(msg.sender, burnWallet, burnAmount);
-        token.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
+        USDT.safeTransferFrom(msg.sender, projectWallet, projectAmount);
+        USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
+        USDT.safeTransferFrom(msg.sender, burnWallet, burnAmount);
+        USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
 
         ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
 
         for (uint256 i; i < toLength; ++i) {
-            claimInfo[i] = ClaimInfo({ token: token, amount: (amount * percentages[i]) / PPM });
+            claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
         }
 
         claimsContract.addClaimInfo(leaders, claimInfo);
