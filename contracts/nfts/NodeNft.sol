@@ -9,13 +9,13 @@ import { ZeroAddress, IdenticalValue } from "../utils/Common.sol";
 /// @title NodeNft contract
 /// @notice Implements ERC721A nft contract
 contract NodeNft is ERC721A, Ownable2Step {
-    // @notice Returns the address of the presale contract
+    /// @notice Returns the address of the presale contract
     address public presale;
 
-    // @notice Returns the access info of the transfer
+    /// @notice Returns the access info of the transfer
     bool public transferEnabled;
 
-    // @notice Returns the basURI of the nft
+    /// @notice Returns the basURI of the nft
     string public baseUri;
 
     /// @dev Emitted when token presale contract is updated

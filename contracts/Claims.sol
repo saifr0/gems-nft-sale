@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+
 import { IClaims, ClaimInfo } from "./interfaces/IClaims.sol";
 
-import { InvalidData, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray } from "./utils/Common.sol";
+import { InvalidData, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray, InvalidSignature } from "./utils/Common.sol";
 
 /// @title Claims contract
 /// @notice Implements the claiming of the leader's commissions
 contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
+    // TO DO delete
+    /// @dev The constant value helps in calculating time
+    // uint256 private constant ONE_WEEK_SECONDS = 604800;
+    uint256 private constant ONE_WEEK_SECONDS = 600;
 
     /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
     bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");
@@ -25,20 +31,23 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice The address of funds wallet
     address public fundsWallet;
 
-    /// @notice Stores the claim amount of user for the token
-    mapping(address => mapping(IERC20 => uint256)) public pendingClaims;
+    /// @notice The address of funds wallet
+    uint256 public currentWeek;
 
-    /// @notice Stores the enabled/disabled status
-    bool public isEnabled;
+    /// @notice Stores the end time of the given week number
+    mapping(uint256 week => uint256 endTime) public endTimes;
+
+    /// @notice Stores the claim amount of token in a week of the user
+    mapping(address => mapping(uint256 => mapping(IERC20 => uint256))) public pendingClaims;
 
     /// @dev Emitted when claim amount is set for the addresses
-    event ClaimSet(address indexed to, ClaimInfo claimInfo);
+    event ClaimSet(address indexed to, uint256 indexed week, uint256 endTime, ClaimInfo claimInfo);
 
     /// @dev Emitted when claim amount is claimed
-    event FundsClaimed(address indexed by, IERC20 token, uint256 amount);
+    event FundsClaimed(address indexed by, uint256 indexed week, IERC20 token, uint256 amount);
 
-    /// @dev Emitted when claim access changes
-    event ClaimsEnableUpdated(bool oldAccess, bool newAccess);
+    /// @dev Emitted when claim access changes for the week
+    event RoundEnableUpdated(bool oldAccess, bool newAccess);
 
     /// @dev Emitted when address of funds wallet is updated
     event FundsWalletUpdated(address oldFundsWallet, address newFundsWallet);
@@ -47,30 +56,41 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     event PresaleUpdated(address prevAddress, address newAddress);
 
     /// @dev Emitted when claim is revoked for the user
-    event ClaimRevoked(address leader, IERC20 token, uint256 amount);
+    event ClaimRevoked(address leader, IERC20 token, uint256 amount, uint256 week);
 
     /// @dev Emitted when claim is added for the user
-    event ClaimsUpdated(address leader, IERC20 token, uint256 amount);
+    event ClaimsUpdated(address leader, IERC20 token, uint256 amount, uint256 week);
+
+    /// @notice Thrown when claiming before week ends
+    error RoundNotEnded();
+
+    /// @notice Thrown when week is not enabled
+    error RoundNotEnabled();
 
     /// @notice Thrown when caller is not presale contract
     error OnlyPresale();
 
+    /// @notice Thrown when commissions manager wants to set claim while claim enable
+    error WaitForRoundDisable();
+
     /// @dev Constructor
-    /// @param fundsWalletAddress The address of funds Wallet
-    constructor(address fundsWalletAddress) {
-        if (fundsWalletAddress == address(0)) {
+    /// @param fundsAddress The address of fundsWallet
+    constructor(address fundsAddress) {
+        if (fundsAddress == address(0)) {
             revert ZeroAddress();
         }
 
-        fundsWallet = fundsWalletAddress;
+        fundsWallet = fundsAddress;
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
         _setRoleAdmin(COMMISSIONS_MANAGER, ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, msg.sender);
+        currentWeek++;
+        endTimes[currentWeek] = block.timestamp + ONE_WEEK_SECONDS;
     }
 
     /// @inheritdoc IClaims
     function addClaimInfo(address[] calldata to, ClaimInfo[] calldata claims) external {
-        if (msg.sender != presale) {
+        if (msg.sender != address(presale)) {
             revert OnlyPresale();
         }
 
@@ -84,6 +104,13 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             revert ArrayLengthMismatch();
         }
 
+        if (endTimes[currentWeek] >= block.timestamp) {
+            uint256 weeksElapsed = (endTimes[currentWeek] - block.timestamp) / ONE_WEEK_SECONDS;
+            uint256 pastWeek = currentWeek;
+            currentWeek += weeksElapsed;
+            endTimes[currentWeek] = endTimes[pastWeek] + (weeksElapsed * ONE_WEEK_SECONDS);
+        }
+
         for (uint256 i; i < toLength; ++i) {
             address leader = to[i];
 
@@ -91,12 +118,12 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 revert ZeroAddress();
             }
 
-            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader];
+            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][currentWeek];
             ClaimInfo[] calldata toClaim = claims;
             ClaimInfo memory amount = toClaim[i];
             claimInfo[amount.token] += amount.amount;
 
-            emit ClaimSet({ to: leader, claimInfo: amount });
+            emit ClaimSet({ to: leader, week: currentWeek, endTime: endTimes[currentWeek], claimInfo: amount });
         }
     }
 
@@ -104,16 +131,23 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
-    function revokeLeaderClaim(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts) external onlyRole(ADMIN_ROLE) {
-        _updateOrRevokeClaim(leaders, tokens, amounts, true);
+    /// @param week The week number
+    function revokeLeaderClaim(
+        address[] calldata leaders,
+        IERC20[][] calldata tokens,
+        uint256[][] calldata amounts,
+        uint256 week
+    ) external onlyRole(ADMIN_ROLE) {
+        _updateOrRevokeClaim(leaders, tokens, amounts, week, true);
     }
 
     /// @notice Updates leader claim for the given token
     /// @param leaders The addresses of the leaders
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
-    function updateClaims(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts) external onlyRole(ADMIN_ROLE) {
-        _updateOrRevokeClaim(leaders, tokens, amounts, false);
+    /// @param week The week number
+    function updateClaims(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts, uint256 week) external onlyRole(ADMIN_ROLE) {
+        _updateOrRevokeClaim(leaders, tokens, amounts, week, false);
     }
 
     /// @notice Updates presale contract address in claims
@@ -152,23 +186,25 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         fundsWallet = newFundsWallet;
     }
 
-    /// @notice Changes the claim access of the contract
-    /// @param status The access status
-    function enableClaims(bool status) external onlyRole(COMMISSIONS_MANAGER) {
-        bool oldAccess = isEnabled;
+    /// @notice Gives max allowance of tokens to presale contract
+    /// @param tokens List of tokens to approve
+    function approveAllowance(IERC20[] calldata tokens) external onlyRole(ADMIN_ROLE) {
+        uint256 tokensLength = tokens.length;
 
-        if (oldAccess == status) {
-            revert IdenticalValue();
+        for (uint256 i; i < tokensLength; ++i) {
+            tokens[i].forceApprove(address(presale), type(uint256).max);
         }
-
-        emit ClaimsEnableUpdated({ oldAccess: oldAccess, newAccess: status });
-
-        isEnabled = status;
     }
 
-    /// @notice Claims the amount for the given tokens if exists
-    function claim(IERC20[] calldata tokens) external nonReentrant {
-        mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender];
+    /// @notice Claims the amount in a given week
+    /// @param week The week in which you want to claim
+    /// @param tokens The addresses of the token to be claimed
+    function claim(uint256 week, IERC20[] calldata tokens) external nonReentrant {
+        if (block.timestamp < endTimes[week]) {
+            revert RoundNotEnded();
+        }
+
+        mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender][week];
         uint256 tokensLength = tokens.length;
 
         for (uint256 i; i < tokensLength; ++i) {
@@ -182,7 +218,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             delete claimInfo[token];
             token.safeTransfer(msg.sender, amount);
 
-            emit FundsClaimed({ by: msg.sender, token: token, amount: amount });
+            emit FundsClaimed({ by: msg.sender, week: week, token: token, amount: amount });
         }
     }
 
@@ -190,8 +226,9 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
+    /// @param week The week number
     /// @param isRevoke Boolean for revoke or update claims
-    function _updateOrRevokeClaim(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts, bool isRevoke) private {
+    function _updateOrRevokeClaim(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts, uint256 week, bool isRevoke) private {
         uint256 leadersLength = leaders.length;
 
         if (leadersLength == 0) {
@@ -211,7 +248,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 revert ArrayLengthMismatch();
             }
 
-            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader];
+            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
 
             for (uint256 j; j < leaderTokens.length; ++j) {
                 IERC20 token = leaderTokens[j];
@@ -219,12 +256,14 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
                 if (isRevoke) {
                     claimInfo[token] -= amount;
+
                     token.safeTransfer(fundsWallet, amount);
-                    emit ClaimRevoked(leader, token, amount);
+
+                    emit ClaimRevoked(leader, token, amount, week);
                 } else {
                     claimInfo[token] += amount;
 
-                    emit ClaimsUpdated(leader, token, amount);
+                    emit ClaimsUpdated(leader, token, amount, week);
                 }
             }
         }

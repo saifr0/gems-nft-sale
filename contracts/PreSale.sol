@@ -32,8 +32,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev The constant value helps in calculating values
     uint256 private constant PRICE_ACCRETION_PERENTAGE_PPM = 50_000;
 
+    // TO DO delete
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
+    // uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000e6;
 
     /// @dev The constant value helps in calculating platform amount
     uint256 private constant PLATFORM_PERCENTAGE_PPM = 100_000;

@@ -54,7 +54,7 @@ contract PreSaleTest is Test {
     address gemsFundWallet;
 
     uint256 privateKey;
-    address user = 0x68a6649c2aFD27477945a22Af9e61b570FBE8ad0;
+    address user = 0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D;
     PreSale public preSale;
     TokenRegistry public tokenRegistryContract;
     uint256[] nftPrices;
@@ -100,11 +100,6 @@ contract PreSaleTest is Test {
         usdtFundWallet = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
         usdcFundWallet = 0x5414d89a8bF7E99d732BC52f3e6A3Ef461c0C078;
         gemsFundWallet = 0xAFb979d9afAd1aD27C5eFf4E27226E3AB9e5dCC9;
-
-        tokenRegistryContract = new TokenRegistry();
-        console.log("tokenRegistryContract==", address(tokenRegistryContract));
-        // minersPrices = [500000000];
-        // nodesPrices = [500000000, 1000000000, 5000000000];
 
         leaders = [
             0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269,
@@ -153,6 +148,10 @@ contract PreSaleTest is Test {
         // tokenRegistryContract.initialize(signer);
         // console.log("initilized");
 
+        // vm.startPrank(owner);
+        // // tokenRegistryContract.setTokenPriceFeed(tokens, priceFeeds);
+        // console.log("price set");
+        // vm.stopPrank();
         // -----------------------------------  Price - Feed ----------------------------------- //
 
         // -----------------------------------  fund-user ----------------------------------- //
@@ -161,77 +160,69 @@ contract PreSaleTest is Test {
         console.log("hello  1");
 
         deal(address(USDT), user, 2323420_000_000000 * 1e6);
-        // deal(address(GEMS), user, 100_000_000000 * 1e18);
-        uint256[3] memory nodesNFTPrices = [uint256(1000000), uint256(2000000), uint256(3000000)];
+        deal(address(GEMS), user, 100_000_000000 * 1e18);
 
-        vm.startPrank(user);
-        preSale = new PreSale(
-            platform,
-            platform,
-            platform,
-            signer,
-            owner,
-            IERC20(0x7Ddd14E3a173A5Db7bB8fd74b82b667F221492B9),
-            IERC20(0x6fEA2f1b82aFC40030520a6C49B0d3b652A65915),
-            IClaims(0x8803eE4671159e6a07067da6ee4789655125C089),
-            IMinerNft(0x67aF8500a168DC4984d61FB12fC9394B8CF7339b),
-            INodeNft(0x2E996eA23e1820f010d9cd9dc9ec3c8a5E8ABe3F),
-            ITokenRegistry(0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f),
-            10_000_000,
-            [uint256(10_000_000), uint256(20_000_000), uint256(30_000_000)]
-        );
-        console.log("preSale==", address(preSale));
+        uint256[3] memory nodesNFTPrices = [uint256(1000000), uint256(200), uint256(300)];
+
+        // vm.startPrank(user);
+        preSale = PreSale(0xC498C812d0b254dac59294E5E498a62C73d92B84);
+        // console.log("preSale==", address(preSale));
 
         vm.stopPrank();
     }
 
     function testPurchase() external {
-        uint256 deadline = 1737636228;
-        console.log("-----   deadline   ------", deadline);
-        console.log("-----   user   ------", user);
+        uint256 deadline = block.timestamp + 60;
+        uint8 nf = 22;
+        uint256 gemsPrice = .1 * 10 ** 10;
 
-        // (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(0, 0, USDT, deadline);
+        //  uint256 nodeNftId,
+        // uint256 deadline,
+        // uint256[3] calldata quantities,
+        // uint256[] calldata percentages,
+        // address[] calldata leaders,
+        // string memory code,
+        // uint8 v,
+        // bytes32 r,
+        // bytes32 s
+
+        vm.startPrank(preSale.signerWallet());
+        bytes32 mhash = keccak256(abi.encodePacked(user, nf, gemsPrice, deadline, GEMS));
+        bytes32 msgHash = mhash.toEthSignedMessageHash();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
+
+        vm.stopPrank();
 
         // -------------------------------- purchases ------------------------------------------ //
-        uint256 latestPriceGEMS = 1200000000;
-        uint256 quantity = 10;
-
-        vm.startPrank(signer);
-        bytes32 msgHash = (keccak256(abi.encodePacked(user, "saif", percentages, leaders, deadline, USDT))).toEthSignedMessageHash();
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
-        console.log(v);
-        console.logBytes32(r);
-        console.logBytes32(s);
-        vm.stopPrank();
 
         vm.startPrank(user);
         USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+        code = "saif";
 
-        //         v : 0x1c
-        // r : 0xb5faf8e776eeb61fd527a5f4338778935203885f861af4351903bfbad5cd4e8b
-        // s : 0x58e4b357d85a1a0d57220a65f0cee50b22e225cc824267f0a9447d6f4a6b7716
+        preSale.purchaseNodeNFT(20, gemsPrice, deadline, nf, v, r, s);
 
-        preSale.purchaseMinerNFTDiscount(1, deadline, [uint(1), uint(0), uint(0)], percentages, leaders, "saif", v, r, s);
-        // GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        // preSale.purchaseMinersNFT(quantity, 8, 10000000, leaders, percentages, code, deadline);
-        // preSale.purchaseNodeNFT(0, quantity, 8, 10000000, leaders, percentages, code, deadline);
+        mhash = keccak256(abi.encodePacked(user, code, percentages, leaders, deadline, USDT));
+        msgHash = mhash.toEthSignedMessageHash();
+        (v, r, s) = vm.sign(privateKey, msgHash);
 
-        // 99995000
+        preSale.purchaseMinerNFTDiscount(19, deadline, [uint(1), uint(0), uint(0)], percentages, leaders, code, v, r, s);
+
         vm.stopPrank();
     }
 
-    function _validateSignWithToken(
-        uint256 referenceTokenPrice,
-        uint256 normalizationFactor,
-        IERC20 token,
-        uint256 deadline
-    ) private returns (uint8, bytes32, bytes32) {
-        vm.startPrank(signer);
-        bytes32 mhash = keccak256(abi.encodePacked(user, referenceTokenPrice, deadline, token, normalizationFactor));
-        bytes32 msgHash = mhash.toEthSignedMessageHash();
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
-        vm.stopPrank();
+    // function _validateSignWithToken(
+    //     uint256 referenceTokenPrice,
+    //     uint256 normalizationFactor,
+    //     IERC20 token,
+    //     uint256 deadline
+    // ) private returns (uint8, bytes32, bytes32) {
+    //     vm.startPrank(signer);
+    //     bytes32 mhash = keccak256(abi.encodePacked(user, referenceTokenPrice, deadline, token, normalizationFactor));
+    //     bytes32 msgHash = mhash.toEthSignedMessageHash();
+    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
+    //     vm.stopPrank();
 
-        return (v, r, s);
-    }
+    //     return (v, r, s);
+    // }
 }
