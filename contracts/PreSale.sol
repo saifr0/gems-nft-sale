@@ -12,7 +12,7 @@ import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
 import { IMinerNft } from "./interfaces/IMinerNft.sol";
 import { INodeNft } from "./interfaces/INodeNft.sol";
 
-import { PPM, ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidSignature, InvalidData, TokenInfo } from "./utils/Common.sol";
+import { PPM, ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidSignature, InvalidData, TokenInfo, ZeroValue } from "./utils/Common.sol";
 
 /// @title PreSale contract
 /// @notice Implements presale of the node and miner nfts
@@ -20,14 +20,14 @@ import { PPM, ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidSignature
 contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
-    /// @dev To achieve return value of required decimals during calculation
-    uint256 private constant NORMALIZATION_FACTOR = 1e30;
-
     /// @dev The constant value helps in calculating project amount
     uint256 private constant PROJECT_PERCENTAGE_PPM = 630_000;
 
     /// @dev The constant value helps in calculating amount
     uint256 private constant CLAIMS_PERCENTAGE_PPM = 250_000;
+
+    /// @dev The constant value helps in calculating values
+    uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value helps in calculating values
     uint256 private constant PRICE_ACCRETION_PERENTAGE_PPM = 50_000;
@@ -47,12 +47,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The maximum amount of money a project hopes to raise in order to proceed with the project
     uint256 public constant MAX_CAP = 40_000_000e6;
 
-    /// @notice The total purchases upto 1 million usd, it will be reset after every million cap increased
-    uint256 public raisedUsd;
-
-    /// @notice The total usd raisedUsd
-    uint256 public totalRaised;
-
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
 
@@ -71,6 +65,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the USDT contract
     IERC20 public immutable USDT;
 
+    /// @notice The total purchases upto 1 million usd, it will be reset after every million cap increased
+    uint256 public raisedUptoOneMillion;
+
+    /// @notice The price of the miner nft
+    uint256 public nodeNFTPrice;
+
+    /// @notice The total usd raised
+    uint256 public totalRaised;
+
     /// @notice That buyEnabled or not
     bool public buyEnabled = true;
 
@@ -85,9 +88,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice The address of the burn wallet
     address public burnWallet;
-
-    /// @notice The price of the miner nft
-    uint256 public nodeNFTPrice;
 
     /// @notice The prices of the node nfts
     uint256[3] public minerNFTPrices;
@@ -142,9 +142,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when sign deadline is expired
     error DeadlineExpired();
-
-    /// @notice Thrown when value to transfer is zero
-    error ZeroValue();
 
     /// @notice Thrown when caller is not claims contract
     error OnlyClaims();
@@ -278,62 +275,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param nodeNftId The node nft id that user holds
     /// @param quantities The amount of each miner nft that user will purchase
     function purchaseMinerNFT(uint256 nodeNftId, uint256[3] calldata quantities) external canBuy nonReentrant {
-        (uint256 purchaseAmount, uint256 latestPrice) = _purchase(nodeNftId, quantities, false);
+        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, false);
         _calculateAndTransferAmounts(USDT, purchaseAmount);
 
         emit MinerNftPurchased({ token: USDT, tokenPrice: latestPrice, by: msg.sender, quantities: quantities, amountPurchased: purchaseAmount });
-    }
-
-    function _purchase(uint256 nodeNftId, uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
-        if (nodeNft.ownerOf(nodeNftId) != msg.sender) {
-            revert CallerNotOwner();
-        }
-
-        TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(USDT);
-
-        if (tokenInfo.latestPrice == 0 || tokenInfo.normalizationFactor == 0) {
-            revert ZeroValue();
-        }
-
-        uint256 prices;
-        uint256 quantityLength = quantities.length;
-
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-
-            if (quantity > 0) {
-                prices += (minerNFTPrices[i] * quantity);
-                minerNft.mint(msg.sender, i, quantity);
-            }
-        }
-
-        _checkZeroValue(prices);
-
-        if (isDiscounted) {
-            prices = (prices * 500_000) / PPM;
-        }
-
-        totalRaised += prices;
-
-        if (totalRaised >= MAX_CAP) {
-            revert MaxCapReached();
-        }
-
-        raisedUsd += prices;
-        uint256 raised = raisedUsd;
-
-        if (raised >= ONE_MILLION_DOLLAR) {
-            uint256 repetitions = raised / ONE_MILLION_DOLLAR;
-            raisedUsd -= ONE_MILLION_DOLLAR * repetitions;
-
-            for (uint256 i; i < quantityLength; ++i) {
-                for (uint256 j; j < repetitions; ++j) {
-                    minerNFTPrices[i] += (minerNFTPrices[i] * PRICE_ACCRETION_PERENTAGE_PPM) / PPM;
-                }
-            }
-        }
-
-        return ((prices * (10 ** tokenInfo.normalizationFactor)) / tokenInfo.latestPrice, tokenInfo.latestPrice);
     }
 
     /// @notice Purchases miner nft on discounted price
@@ -364,7 +309,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert DeadlineExpired();
         }
 
-        (uint256 purchaseAmount, uint256 latestPrice) = _purchase(nodeNftId, quantities, true);
+        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, true);
         _transferAndUpdateCommissions(purchaseAmount, leaders, percentages);
 
         emit MinerNftPurchasedDiscounted({
@@ -480,6 +425,59 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         nodeNFTPrice = newPrice;
     }
 
+    /// @dev Processes miner nft purchase
+    function _processPurchase(uint256 nodeNftId, uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
+        if (nodeNft.ownerOf(nodeNftId) != msg.sender) {
+            revert CallerNotOwner();
+        }
+
+        TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(USDT);
+
+        if (tokenInfo.latestPrice == 0 || tokenInfo.normalizationFactor == 0) {
+            revert ZeroValue();
+        }
+
+        uint256 prices;
+        uint256 quantityLength = quantities.length;
+
+        for (uint256 i; i < quantityLength; ++i) {
+            uint256 quantity = quantities[i];
+
+            if (quantity > 0) {
+                prices += (minerNFTPrices[i] * quantity);
+                minerNft.mint(msg.sender, i, quantity);
+            }
+        }
+
+        _checkZeroValue(prices);
+
+        if (isDiscounted) {
+            prices = (prices * DISCOUNT_PERCENTAGE_PPM) / PPM;
+        }
+
+        totalRaised += prices;
+
+        if (totalRaised >= MAX_CAP) {
+            revert MaxCapReached();
+        }
+
+        raisedUptoOneMillion += prices;
+        uint256 raised = raisedUptoOneMillion;
+
+        if (raised >= ONE_MILLION_DOLLAR) {
+            uint256 repetitions = raised / ONE_MILLION_DOLLAR;
+            raisedUptoOneMillion -= ONE_MILLION_DOLLAR * repetitions;
+
+            for (uint256 i; i < quantityLength; ++i) {
+                for (uint256 j; j < repetitions; ++j) {
+                    minerNFTPrices[i] += (minerNFTPrices[i] * PRICE_ACCRETION_PERENTAGE_PPM) / PPM;
+                }
+            }
+        }
+
+        return ((prices * (10 ** tokenInfo.normalizationFactor)) / tokenInfo.latestPrice, tokenInfo.latestPrice);
+    }
+
     /// @dev Calculates and transfers amount to wallets
     function _calculateAndTransferAmounts(IERC20 token, uint256 amount) private {
         _checkZeroValue(amount);
@@ -587,7 +585,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
         USDT.safeTransferFrom(msg.sender, burnWallet, burnAmount);
         USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
-
         ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
 
         for (uint256 i; i < toLength; ++i) {

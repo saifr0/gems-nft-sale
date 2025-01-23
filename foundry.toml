@@ -10,6 +10,7 @@ optimizer_runs = 1000000
 via_ir = true
 
 remappings = [
+    "erc721a/=node_modules/erc721a/",
     "@openzeppelin/=node_modules/@openzeppelin/",
     "@uniswap/=node_modules/@uniswap/",
     "@chainlink/=node_modules/@chainlink/",

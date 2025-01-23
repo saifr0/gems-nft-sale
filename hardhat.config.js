@@ -11,7 +11,7 @@ module.exports = {
                     viaIR: true,
                     optimizer: {
                         enabled: true,
-                        runs: 800
+                        runs: 1000000
                     },
                     evmVersion: 'cancun'
                 }

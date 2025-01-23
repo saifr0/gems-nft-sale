@@ -25,10 +25,10 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice The address of funds wallet
     address public fundsWallet;
 
-    /// @notice Stores the claim amount of token in a round of the user
+    /// @notice Stores the claim amount of user for the token
     mapping(address => mapping(IERC20 => uint256)) public pendingClaims;
 
-    /// @notice Stores the enabled/disabled status of a round
+    /// @notice Stores the enabled/disabled status
     bool public isEnabled;
 
     /// @dev Emitted when claim amount is set for the addresses
@@ -37,7 +37,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @dev Emitted when claim amount is claimed
     event FundsClaimed(address indexed by, IERC20 token, uint256 amount);
 
-    /// @dev Emitted when claim access changes for the round
+    /// @dev Emitted when claim access changes
     event ClaimsEnableUpdated(bool oldAccess, bool newAccess);
 
     /// @dev Emitted when address of funds wallet is updated
@@ -104,11 +104,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
-    function revokeLeaderClaim(
-        address[] calldata leaders,
-        IERC20[][] calldata tokens,
-        uint256[][] calldata amounts
-    ) external onlyRole(ADMIN_ROLE) {
+    function revokeLeaderClaim(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, tokens, amounts, true);
     }
 
@@ -116,11 +112,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
-    function updateClaims(
-        address[] calldata leaders,
-        IERC20[][] calldata tokens,
-        uint256[][] calldata amounts
-    ) external onlyRole(ADMIN_ROLE) {
+    function updateClaims(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, tokens, amounts, false);
     }
 
@@ -161,7 +153,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     }
 
     /// @notice Changes the claim access of the contract
-    /// @param status The access status of the round
+    /// @param status The access status
     function enableClaims(bool status) external onlyRole(COMMISSIONS_MANAGER) {
         bool oldAccess = isEnabled;
 
@@ -174,7 +166,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         isEnabled = status;
     }
 
-    /// @notice Claims the amount in a given round
+    /// @notice Claims the amount for the given tokens if exists
     function claim(IERC20[] calldata tokens) external nonReentrant {
         mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender];
         uint256 tokensLength = tokens.length;
@@ -199,12 +191,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param tokens Tokens of the leader whose claims will be revoked
     /// @param amounts The revoke amount of each token of the leader
     /// @param isRevoke Boolean for revoke or update claims
-    function _updateOrRevokeClaim(
-        address[] calldata leaders,
-        IERC20[][] calldata tokens,
-        uint256[][] calldata amounts,
-        bool isRevoke
-    ) private {
+    function _updateOrRevokeClaim(address[] calldata leaders, IERC20[][] calldata tokens, uint256[][] calldata amounts, bool isRevoke) private {
         uint256 leadersLength = leaders.length;
 
         if (leadersLength == 0) {
