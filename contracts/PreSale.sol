@@ -45,9 +45,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
-
+    // TO DO DELETE
     /// @notice The maximum amount of money a project hopes to raise in order to proceed with the project
-    uint256 public constant MAX_CAP = 40_000_000e6;
+    // uint256 public constant MAX_CAP = 40_000_000e6;
+    uint256 public constant MAX_CAP = 40_000e6;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;

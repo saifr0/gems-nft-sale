@@ -88,13 +88,9 @@ contract TokenRegistry is OwnableUpgradeable {
             return tokenInfo;
         }
 
-        (
-            uint80 roundId,
-            /*uint80 roundID*/ int price /*uint256 startedAt*/ /*uint80 answeredInRound*/,
-            ,
-            uint256 updatedAt,
-
-        ) = /*uint256 timeStamp*/ data.priceFeed.latestRoundData();
+        (uint80 roundId, /*uint80 roundID*/ int price /*uint256 startedAt*/ /*uint80 answeredInRound*/, , uint256 updatedAt, ) = /*uint256 timeStamp*/ data
+            .priceFeed
+            .latestRoundData();
 
         if (roundId == 0) {
             revert RoundIdNotUpdated();

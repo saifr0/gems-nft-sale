@@ -46,9 +46,6 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @dev Emitted when claim amount is claimed
     event FundsClaimed(address indexed by, uint256 indexed week, IERC20 token, uint256 amount);
 
-    /// @dev Emitted when claim access changes for the week
-    event RoundEnableUpdated(bool oldAccess, bool newAccess);
-
     /// @dev Emitted when address of funds wallet is updated
     event FundsWalletUpdated(address oldFundsWallet, address newFundsWallet);
 
@@ -62,19 +59,13 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     event ClaimsUpdated(address leader, IERC20 token, uint256 amount, uint256 week);
 
     /// @notice Thrown when claiming before week ends
-    error RoundNotEnded();
-
-    /// @notice Thrown when week is not enabled
-    error RoundNotEnabled();
+    error WeekNotEnded();
 
     /// @notice Thrown when caller is not presale contract
     error OnlyPresale();
 
-    /// @notice Thrown when commissions manager wants to set claim while claim enable
-    error WaitForRoundDisable();
-
     /// @dev Constructor
-    /// @param fundsAddress The address of fundsWallet
+    /// @param fundsAddress The address of funds wallet
     constructor(address fundsAddress) {
         if (fundsAddress == address(0)) {
             revert ZeroAddress();
@@ -104,12 +95,17 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             revert ArrayLengthMismatch();
         }
 
-        if (endTimes[currentWeek] >= block.timestamp) {
-            uint256 weeksElapsed = (endTimes[currentWeek] - block.timestamp) / ONE_WEEK_SECONDS;
-            uint256 pastWeek = currentWeek;
+        uint256 prevEndTime = endTimes[currentWeek];
+
+        if (prevEndTime >= block.timestamp) {
+            uint256 weeksElapsed = (prevEndTime - block.timestamp) / ONE_WEEK_SECONDS;
+            // uint256 pastWeek = currentWeek;
             currentWeek += weeksElapsed;
-            endTimes[currentWeek] = endTimes[pastWeek] + (weeksElapsed * ONE_WEEK_SECONDS);
+            // endTimes[currentWeek] = endTimes[pastWeek] + (weeksElapsed * ONE_WEEK_SECONDS);
+            endTimes[currentWeek] = prevEndTime + (weeksElapsed * ONE_WEEK_SECONDS);
         }
+
+        uint256 week = currentWeek;
 
         for (uint256 i; i < toLength; ++i) {
             address leader = to[i];
@@ -118,12 +114,12 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 revert ZeroAddress();
             }
 
-            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][currentWeek];
+            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
             ClaimInfo[] calldata toClaim = claims;
             ClaimInfo memory amount = toClaim[i];
             claimInfo[amount.token] += amount.amount;
 
-            emit ClaimSet({ to: leader, week: currentWeek, endTime: endTimes[currentWeek], claimInfo: amount });
+            emit ClaimSet({ to: leader, week: week, endTime: endTimes[week], claimInfo: amount });
         }
     }
 
@@ -201,7 +197,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param tokens The addresses of the token to be claimed
     function claim(uint256 week, IERC20[] calldata tokens) external nonReentrant {
         if (block.timestamp < endTimes[week]) {
-            revert RoundNotEnded();
+            revert WeekNotEnded();
         }
 
         mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender][week];
