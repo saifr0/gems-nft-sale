@@ -202,32 +202,34 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     }
 
     /// @notice Claims the amount in a given week
-    /// @param _weeks The array of weeks in which you want to claim
-    function claimAll(uint256[] calldata _weeks) external nonReentrant {
-        if (_weeks.length == 0) {
+    /// @param claimWeeks The array of weeks for which you want to claim
+    function claimAll(uint256[] calldata claimWeeks) external nonReentrant {
+        if (claimWeeks.length == 0) {
             revert ZeroLengthArray();
         }
 
-        uint256 amount;
+        uint256 totalAmount;
 
-        for (uint256 i; i < _weeks.length; ++i) {
-            uint256 week = _weeks[i];
+        for (uint256 i; i < claimWeeks.length; ++i) {
+            uint256 week = claimWeeks[i];
 
-            if (block.timestamp < endTimes[week] || pendingClaims[msg.sender][week] == 0) {
+            uint256 amount = pendingClaims[msg.sender][week];
+
+            if (block.timestamp < endTimes[week] || amount == 0) {
                 continue;
             }
 
-            amount += pendingClaims[msg.sender][week];
+            totalAmount += amount;
             delete pendingClaims[msg.sender][week];
 
             emit FundsClaimed({ by: msg.sender, week: week, amount: amount });
         }
 
-        if (amount == 0) {
+        if (totalAmount == 0) {
             revert ZeroValue();
         }
 
-        USDT.safeTransfer(msg.sender, amount);
+        USDT.safeTransfer(msg.sender, totalAmount);
     }
 
     /// @dev Revokes or updates leader claims

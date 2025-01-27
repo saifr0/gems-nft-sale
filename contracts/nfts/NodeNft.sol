@@ -34,18 +34,6 @@ contract NodeNft is ERC721A, Ownable2Step {
     /// @param owner The address of owner wallet
     constructor(address owner) ERC721A("Node-NFT", "Node-NFT") Ownable(owner) {}
 
-    /// @notice The function overrides existing function
-    /// @param from The tokenId will be transferred from `from`
-    /// @param to The tokenId will be transferred to `to`
-    /// @param tokenId The token id to transfer
-    function transferFrom(address from, address to, uint256 tokenId) public payable virtual override {
-        if (!transferEnabled) {
-            revert NotAllowed();
-        }
-
-        super.transferFrom(from, to, tokenId);
-    }
-
     /// @notice Mints nft to `to`, only callable by presale contract
     /// @param to The nft will be minted to `to`
     /// @param quantity The amount of nfts to mint
@@ -93,6 +81,27 @@ contract NodeNft is ERC721A, Ownable2Step {
     /// @param newUri The new uri
     function setBaseURI(string memory newUri) external onlyOwner {
         baseUri = newUri;
+    }
+
+    /// @notice The function overrides existing function
+    /// @param from The tokenId will be transferred from `from`
+    /// @param to The tokenId will be transferred to `to`
+    /// @param tokenId The token id to transfer
+    function transferFrom(address from, address to, uint256 tokenId) public payable virtual override {
+        if (!transferEnabled) {
+            revert NotAllowed();
+        }
+
+        super.transferFrom(from, to, tokenId);
+    }
+
+    /// @notice Returns the overide uniform resource identifier (URI) for `tokenId`.
+    /// @param tokenId The token id
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        if (!_exists(tokenId)) _revert(URIQueryForNonexistentToken.selector);
+
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, "Node")) : "";
     }
 
     /// @dev The function overrides existing function
