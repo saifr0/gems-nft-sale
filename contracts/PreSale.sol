@@ -117,16 +117,16 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     event NodeNftPriceUpdated(uint256 oldPrice, uint256 newPrice);
 
     /// @dev Emitted when node nft is purchased
-    event NodeNftPurchased(IERC20 token, uint256 tokenPrice, address by, uint256 amountPurchased, uint256 quantity);
+    event NodeNftPurchased(uint256 tokenPrice, address by, uint256 amountPurchased, uint256 quantity);
 
     /// @dev Emitted when miner nft is purchased
-    event MinerNftPurchased(IERC20 token, uint256 tokenPrice, address by, uint256[3] quantities, uint256 amountPurchased);
+    event MinerNftPurchased(uint256 tokenPrice, address by, uint256[3] minerPrices, uint256[3] quantities, uint256 amountPurchased);
 
     /// @dev Emitted when miner nft is purchased on discounted price
     event MinerNftPurchasedDiscounted(
-        IERC20 token,
         uint256 tokenPrice,
         address by,
+        uint256[3] minerPrices,
         uint256[3] quantities,
         string code,
         uint256 amountPurchased,
@@ -268,17 +268,18 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         _calculateAndTransferAmounts(GEMS, purchaseAmount);
         nodeNft.mint(msg.sender, quantity);
 
-        emit NodeNftPurchased({ token: GEMS, tokenPrice: referenceTokenPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
+        emit NodeNftPurchased({ tokenPrice: referenceTokenPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
     }
 
     /// @notice Purchases miner nft with USDT
     /// @param nodeNftId The node nft id that user holds
     /// @param quantities The amount of each miner nft that user will purchase
     function purchaseMinerNFT(uint256 nodeNftId, uint256[3] calldata quantities) external canBuy nonReentrant {
+        uint256[3] memory minerPrices = minerNFTPrices;
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, false);
         _calculateAndTransferAmounts(USDT, purchaseAmount);
 
-        emit MinerNftPurchased({ token: USDT, tokenPrice: latestPrice, by: msg.sender, quantities: quantities, amountPurchased: purchaseAmount });
+        emit MinerNftPurchased({ tokenPrice: latestPrice, by: msg.sender, minerPrices: minerPrices, quantities: quantities, amountPurchased: purchaseAmount });
     }
 
     /// @notice Purchases miner nft on discounted price
@@ -309,13 +310,14 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert DeadlineExpired();
         }
 
+        uint256[3] memory minerPrices = minerNFTPrices;
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, true);
         _transferAndUpdateCommissions(purchaseAmount, leaders, percentages);
 
         emit MinerNftPurchasedDiscounted({
-            token: USDT,
             tokenPrice: latestPrice,
             by: msg.sender,
+            minerPrices: minerPrices,
             quantities: quantities,
             code: code,
             amountPurchased: purchaseAmount,

@@ -213,7 +213,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         for (uint256 i; i < _weeks.length; ++i) {
             uint256 week = _weeks[i];
 
-            if (block.timestamp < endTimes[week]) {
+            if (block.timestamp < endTimes[week] || pendingClaims[msg.sender][week] == 0) {
                 continue;
             }
 
