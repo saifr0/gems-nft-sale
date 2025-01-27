@@ -69,7 +69,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     IERC20 public immutable USDT;
 
     /// @notice The total purchases upto 1 million usd, it will be reset after every million cap increased
-    uint256 public raisedUptoOneMillion;
+    uint256 public accretionThreshold;
 
     /// @notice The price of the miner nft
     uint256 public nodeNFTPrice;
@@ -461,11 +461,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert MaxCapReached();
         }
 
-        uint256 raised = raisedUptoOneMillion += prices;
+        uint256 raised = accretionThreshold += prices;
 
         if (raised >= ONE_MILLION_DOLLAR) {
             uint256 repetitions = raised / ONE_MILLION_DOLLAR;
-            raisedUptoOneMillion -= ONE_MILLION_DOLLAR * repetitions;
+            accretionThreshold -= ONE_MILLION_DOLLAR * repetitions;
 
             for (uint256 i; i < quantityLength; ++i) {
                 for (uint256 j; j < repetitions; ++j) {
