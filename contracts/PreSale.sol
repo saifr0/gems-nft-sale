@@ -541,11 +541,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ArrayLengthMismatch();
         }
 
-        ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
+        uint256[] memory claims = new uint256[](toLength);
 
         for (uint256 i; i < toLength; ++i) {
             sumPercentage += percentages[i];
-            claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
+            claims[i] = (amount * percentages[i]) / PPM;
         }
 
         if (sumPercentage == 0) {
@@ -566,12 +566,12 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
         USDT.safeTransferFrom(msg.sender, burnWallet, (amount * BURN_PERCENTAGE_PPM) / PPM);
         USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
-        // ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
+        // ClaimInfo[] memory claims = new ClaimInfo[](toLength);
 
         // for (uint256 i; i < toLength; ++i) {
-        //     claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
+        //     claims[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
         // }
 
-        claimsContract.addClaimInfo(leaders, claimInfo);
+        claimsContract.addClaimInfo(leaders, claims);
     }
 }

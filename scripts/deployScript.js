@@ -81,12 +81,12 @@ async function main() {
     // return;
 
     // // -------------------------------- CLAIMS------------------------------------------ //
-    const Claims = await hre.ethers.deployContract('Claims', [projectWalletAddress]);
+    const Claims = await hre.ethers.deployContract('Claims', [projectWalletAddress, usdtAddress]);
     console.log('Deploying Claims...');
     await Claims.waitForDeployment();
     console.log('Claims deployed to---------', Claims.target);
     await new Promise((resolve) => setTimeout(resolve, 30000));
-    verify(Claims.target, [projectWalletAddress]);
+    verify(Claims.target, [projectWalletAddress, usdtAddress]);
     console.log('Claims Verified');
     // return;
 
@@ -133,10 +133,10 @@ async function main() {
     await claims.updatePresaleAddress(PreSale.target);
     return;
 
-    // MinerNFT deployed to ------- 0xA69453C5A152Babb601530cD6e093eD50f39Fd8E
-    // NodeNft deployed to  ------- 0x342df459f484C9CCd6B568aeb89D7b2196872CB4
-    // Claims deployed to   ------  0xbaAD493F51c26216dAdFda88F9A29251a8A00369
-    // PreSale deployed to-------- 0x8Fde028c6c936dBE9732500d6b5C0dC434213Cd2
+    // MinerNFT deployed to ------- 0x8a05b3AF3fF9F9C24D9538E49638dfD6d2e575fA
+    // NodeNft deployed to  ------- 0x2bE55DAb4B9dc5D754a5d2Aa19ED682958CD242F
+    // Claims deployed to   ------  0xa28B995f0A097D3ae56D3b18FBaE8357b5fEbd7c
+    // PreSale deployed to-------- 0x2c35e26279AFB35a17cCF80CD64D5B05AD3Fdf2c
 
     // let claims = await hre.ethers.getContractAt('Claims', Claims.target);
     // await claims.updatePresaleAddress(PreSale.target);
