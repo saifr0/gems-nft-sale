@@ -7,7 +7,7 @@ import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/Mes
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-import { IClaims, ClaimInfo } from "./interfaces/IClaims.sol";
+import { IClaims } from "./interfaces/IClaims.sol";
 import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
 import { IMinerNft } from "./interfaces/IMinerNft.sol";
 import { INodeNft } from "./interfaces/INodeNft.sol";
