@@ -20,9 +20,6 @@ import { PPM, ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidSignature
 contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
-    /// @dev The constant value helps in calculating project amount
-    uint256 private constant PROJECT_PERCENTAGE_PPM = 630_000;
-
     /// @dev The constant value helps in calculating amount
     uint256 private constant CLAIMS_PERCENTAGE_PPM = 250_000;
 
@@ -35,16 +32,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev The constant value of one million in dollars
     uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
-    /// @dev The constant value helps in calculating platform amount
-    uint256 private constant PLATFORM_PERCENTAGE_PPM = 100_000;
-
-    /// @dev The constant value helps in calculating burn amount
-    uint256 private constant BURN_PERCENTAGE_PPM = 20_000;
-
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
-    /// @notice The maximum amount of money a project hopes to raise in order to proceed with the project
+    /// @notice The maximum amount of money a project hopes to raise
     uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The address of claims contract
@@ -65,7 +56,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the USDT contract
     IERC20 public immutable USDT;
 
-    /// @notice The total purchases upto 1 million usd, it will be reset after every million cap increased
+    /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
     uint256 public accretionThreshold;
 
     /// @notice The price of the miner nft
@@ -80,14 +71,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the signer wallet
     address public signerWallet;
 
-    /// @notice The address of the project wallet
-    address public projectWallet;
+    /// @notice The address of the node funds wallet
+    address public nodeFundsWallet;
 
-    /// @notice The address of the platform wallet
-    address public platformWallet;
-
-    /// @notice The address of the burn wallet
-    address public burnWallet;
+    /// @notice The address of the miner funds wallet
+    address public minerFundsWallet;
 
     /// @notice The prices of the node nfts
     uint256[3] public minerNFTPrices;
@@ -98,14 +86,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Emitted when address of signer is updated
     event SignerUpdated(address oldSigner, address newSigner);
 
-    /// @dev Emitted when address of platform wallet is updated
-    event PlatformWalletUpdated(address oldPlatformWallet, address newPlatformWallet);
+    /// @dev Emitted when address of node funds wallet is updated
+    event NodeFundsWalletUpdated(address oldNodeFundsWallet, address newNodeFundsWallet);
 
-    /// @dev Emitted when address of project wallet is updated
-    event ProjectWalletUpdated(address oldProjectWallet, address newProjectWallet);
-
-    /// @dev Emitted when address of burn wallet is updated
-    event BurnWalletUpdated(address oldBurnWallet, address newBurnWallet);
+    /// @dev Emitted when address of miner funds wallet is updated
+    event MinerFundsWalletUpdated(address oldMinerFundsWallet, address newMinerFundsWallet);
 
     /// @dev Emitted when blacklist access of address is updated
     event BlacklistUpdated(address which, bool accessNow);
@@ -117,15 +102,21 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     event NodeNftPriceUpdated(uint256 oldPrice, uint256 newPrice);
 
     /// @dev Emitted when node nft is purchased
-    event NodeNftPurchased(uint256 tokenPrice, address by, uint256 amountPurchased, uint256 quantity);
+    event NodeNftPurchased(uint256 tokenPrice, address indexed by, uint256 amountPurchased, uint256 quantity);
 
     /// @dev Emitted when miner nft is purchased
-    event MinerNftPurchased(uint256 tokenPrice, address by, uint256[3] minerPrices, uint256[3] quantities, uint256 amountPurchased);
+    event MinerNftPurchased(
+        uint256 tokenPrice,
+        address indexed by,
+        uint256[3] minerPrices,
+        uint256[3] quantities,
+        uint256 amountPurchased
+    );
 
     /// @dev Emitted when miner nft is purchased on discounted price
     event MinerNftPurchasedDiscounted(
         uint256 tokenPrice,
-        address by,
+        address indexed by,
         uint256[3] minerPrices,
         uint256[3] quantities,
         string code,
@@ -174,9 +165,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @dev Constructor
-    /// @param projectWalletAddress The address of project wallet
-    /// @param platformWalletAddress The address of platform wallet
-    /// @param burnWalletAddress The address of burn wallet
+    /// @param nodeFundsWalletAddress The address of node funds wallet
+    /// @param minerFundsWalletAddress The address of node funds wallet
     /// @param signerAddress The address of signer wallet
     /// @param owner The address of owner wallet
     /// @param gemsAddress The address gems contract
@@ -188,9 +178,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param nodeNftPriceInit The price of minor nft
     /// @param minerNftPricesInit The prices of node nfts
     constructor(
-        address projectWalletAddress,
-        address platformWalletAddress,
-        address burnWalletAddress,
+        address nodeFundsWalletAddress,
+        address minerFundsWalletAddress,
         address signerAddress,
         address owner,
         IERC20 gemsAddress,
@@ -203,9 +192,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[3] memory minerNftPricesInit
     )
         Ownable(owner)
-        checkAddressZero(projectWalletAddress)
-        checkAddressZero(platformWalletAddress)
-        checkAddressZero(burnWalletAddress)
+        checkAddressZero(nodeFundsWalletAddress)
+        checkAddressZero(minerFundsWalletAddress)
         checkAddressZero(signerAddress)
         checkAddressZero(address(gemsAddress))
         checkAddressZero(address(usdtAddress))
@@ -224,9 +212,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        projectWallet = projectWalletAddress;
-        platformWallet = platformWalletAddress;
-        burnWallet = burnWalletAddress;
+        nodeFundsWallet = nodeFundsWalletAddress;
+        minerFundsWallet = minerFundsWalletAddress;
         signerWallet = signerAddress;
         GEMS = gemsAddress;
         USDT = usdtAddress;
@@ -263,13 +250,23 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
         // The input must have been signed by the presale signer
-        _verifySignature(keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, GEMS)), v, r, s);
+        _verifySignature(
+            keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, GEMS)),
+            v,
+            r,
+            s
+        );
         uint256 purchaseAmount = (quantity * nodeNFTPrice * (10 ** referenceNormalizationFactor)) / referenceTokenPrice;
         _checkZeroValue(purchaseAmount);
-        GEMS.safeTransferFrom(msg.sender, projectWallet, purchaseAmount);
+        GEMS.safeTransferFrom(msg.sender, nodeFundsWallet, purchaseAmount);
         nodeNft.mint(msg.sender, quantity);
 
-        emit NodeNftPurchased({ tokenPrice: referenceTokenPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
+        emit NodeNftPurchased({
+            tokenPrice: referenceTokenPrice,
+            by: msg.sender,
+            amountPurchased: purchaseAmount,
+            quantity: quantity
+        });
     }
 
     /// @notice Purchases miner nft with USDT
@@ -279,9 +276,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[3] memory minerPrices = minerNFTPrices;
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, false);
         _checkZeroValue(purchaseAmount);
-        USDT.safeTransferFrom(msg.sender, projectWallet, purchaseAmount);
+        USDT.safeTransferFrom(msg.sender, minerFundsWallet, purchaseAmount);
 
-        emit MinerNftPurchased({ tokenPrice: latestPrice, by: msg.sender, minerPrices: minerPrices, quantities: quantities, amountPurchased: purchaseAmount });
+        emit MinerNftPurchased({
+            tokenPrice: latestPrice,
+            by: msg.sender,
+            minerPrices: minerPrices,
+            quantities: quantities,
+            amountPurchased: purchaseAmount
+        });
     }
 
     /// @notice Purchases miner nft on discounted price
@@ -354,46 +357,37 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         signerWallet = newSigner;
     }
 
-    /// @notice Changes platform wallet address
-    /// @param newPlatformWallet The address of the new platform wallet
-    function updatePlatformWallet(address newPlatformWallet) external checkAddressZero(newPlatformWallet) onlyOwner {
-        address oldPlatformWallet = platformWallet;
+    /// @notice Changes node funds wallet address
+    /// @param newNodeFundsWallet The address of the new funds wallet
+    function updateNodeFundsWallet(address newNodeFundsWallet) external checkAddressZero(newNodeFundsWallet) onlyOwner {
+        address oldNodeFundsWallet = nodeFundsWallet;
 
-        if (oldPlatformWallet == newPlatformWallet) {
+        if (oldNodeFundsWallet == newNodeFundsWallet) {
             revert IdenticalValue();
         }
 
-        emit PlatformWalletUpdated({ oldPlatformWallet: oldPlatformWallet, newPlatformWallet: newPlatformWallet });
+        emit NodeFundsWalletUpdated({ oldNodeFundsWallet: oldNodeFundsWallet, newNodeFundsWallet: newNodeFundsWallet });
 
-        platformWallet = newPlatformWallet;
+        nodeFundsWallet = newNodeFundsWallet;
     }
 
-    /// @notice Changes project wallet address
-    /// @param newProjectWallet The address of the new project wallet
-    function updateProjectWallet(address newProjectWallet) external checkAddressZero(newProjectWallet) onlyOwner {
-        address oldProjectWallet = projectWallet;
+    /// @notice Changes miner funds wallet address
+    /// @param newMinerFundsWallet The address of the new funds wallet
+    function updateMinerFundsWallet(
+        address newMinerFundsWallet
+    ) external checkAddressZero(newMinerFundsWallet) onlyOwner {
+        address oldMinerFundsWallet = minerFundsWallet;
 
-        if (oldProjectWallet == newProjectWallet) {
+        if (oldMinerFundsWallet == newMinerFundsWallet) {
             revert IdenticalValue();
         }
 
-        emit ProjectWalletUpdated({ oldProjectWallet: oldProjectWallet, newProjectWallet: newProjectWallet });
+        emit MinerFundsWalletUpdated({
+            oldMinerFundsWallet: oldMinerFundsWallet,
+            newMinerFundsWallet: newMinerFundsWallet
+        });
 
-        projectWallet = newProjectWallet;
-    }
-
-    /// @notice Changes burn wallet address
-    /// @param newBurnWallet The address of the new burn wallet
-    function updateBurnWallet(address newBurnWallet) external checkAddressZero(newBurnWallet) onlyOwner {
-        address oldBurnWallet = burnWallet;
-
-        if (oldBurnWallet == newBurnWallet) {
-            revert IdenticalValue();
-        }
-
-        emit BurnWalletUpdated({ oldBurnWallet: oldBurnWallet, newBurnWallet: newBurnWallet });
-
-        burnWallet = newBurnWallet;
+        minerFundsWallet = newMinerFundsWallet;
     }
 
     /// @notice Changes the access of any address in contract interaction
@@ -413,7 +407,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Changes token registry contract address
     /// @param newTokenRegistry The address of the new token registry contract
-    function updateTokenRegistry(ITokenRegistry newTokenRegistry) external checkAddressZero(address(newTokenRegistry)) onlyOwner {
+    function updateTokenRegistry(
+        ITokenRegistry newTokenRegistry
+    ) external checkAddressZero(address(newTokenRegistry)) onlyOwner {
         ITokenRegistry oldTokenRegistry = tokenRegistry;
 
         if (oldTokenRegistry == newTokenRegistry) {
@@ -444,7 +440,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @dev Processes miner nft purchase
-    function _processPurchase(uint256 nodeNftId, uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
+    function _processPurchase(
+        uint256 nodeNftId,
+        uint256[3] calldata quantities,
+        bool isDiscounted
+    ) private returns (uint256, uint256) {
         if (nodeNft.ownerOf(nodeNftId) != msg.sender) {
             revert CallerNotOwner();
         }
@@ -529,11 +529,13 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @dev Calculates, transfers and update commissions
-    function _transferAndUpdateCommissions(uint256 amount, address[] memory leaders, uint256[] memory percentages) private {
+    function _transferAndUpdateCommissions(
+        uint256 amount,
+        address[] memory leaders,
+        uint256[] memory percentages
+    ) private {
         _checkZeroValue(amount);
-        // // uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
-        // uint256 platformAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
-        // uint256 projectAmount = (amount * PROJECT_PERCENTAGE_PPM) / PPM;
+
         uint256 toLength = leaders.length;
         uint256 sumPercentage;
 
@@ -568,19 +570,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 equivalence = (amount * sumPercentage) / PPM;
 
         if (sumPercentage < CLAIMS_PERCENTAGE_PPM) {
-            // platformAmount += (((amount * CLAIMS_PERCENTAGE_PPM) / PPM) - equivalence);
-            amount = amount - equivalence;
+            amount -= equivalence;
         }
 
-        USDT.safeTransferFrom(msg.sender, projectWallet, amount;
-        // USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
-        // USDT.safeTransferFrom(msg.sender, burnWallet, (amount * BURN_PERCENTAGE_PPM) / PPM);
+        USDT.safeTransferFrom(msg.sender, minerFundsWallet, amount);
         USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
-        // ClaimInfo[] memory claims = new ClaimInfo[](toLength);
-
-        // for (uint256 i; i < toLength; ++i) {
-        //     claims[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
-        // }
 
         claimsContract.addClaimInfo(leaders, claims);
     }

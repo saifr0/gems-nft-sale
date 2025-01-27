@@ -14,20 +14,10 @@ async function main() {
     now = now / 1000;
     now = Math.trunc(now);
 
-    const ADMIN_ROLE = '0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42';
-
-    const TOKEN_NF_ETH = 10;
-    const NFT_NF_ETH = 20;
-    const TOLERANCE_ETH = 7200;
-
-    const TOKEN_NF_USDT_USDC = 22;
-    const NFT_NF_USDT_USDC = 8;
-    const TOLERANCE_USDT_USDC = 172800;
-
     const ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
-    const USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
-    const WETH = '0x4200000000000000000000000000000000000006';
-    const WBTC = '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf';
+    // const USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+    // const WETH = '0x4200000000000000000000000000000000000006';
+    // const WBTC = '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf';
 
     const projectWalletAddress = '0x5d63cE81FAbaCf586A8fd4039Db08B59BE909D5b';
     const platformWalletAddress = '0x0cFA15E360B968E4706050A4FebeB57bdb8C5701';

@@ -18,11 +18,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @dev The constant value helps in calculating time
     uint256 private constant ONE_WEEK_SECONDS = 604800;
 
-    /// @notice The address of the USDT contract
-    IERC20 public immutable USDT;
-
     /// @notice Returns the identifier of the ADMIN_ROLE role
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN");
+
+    /// @notice The address of the USDT contract
+    IERC20 public immutable USDT;
 
     /// @notice Returns the address of the presale contract
     address public presale;
@@ -115,12 +115,6 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
             pendingClaims[leader][week] += amount;
 
-            // mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
-
-            // ClaimInfo[] calldata toClaim = claims;
-            // ClaimInfo memory amount = toClaim[i];
-            // claimInfo[amount.token] += amount.amount;
-
             emit ClaimSet({ to: leader, week: week, endTime: endTimes[week], amount: amount });
         }
     }
@@ -129,7 +123,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param amounts The revoke amount of the leader
     /// @param week The week number
-    function revokeLeaderClaim(address[] calldata leaders, uint256[] calldata amounts, uint256 week) external onlyRole(ADMIN_ROLE) {
+    function revokeLeaderClaim(
+        address[] calldata leaders,
+        uint256[] calldata amounts,
+        uint256 week
+    ) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, amounts, week, true);
     }
 
@@ -137,7 +135,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param leaders The addresses of the leaders
     /// @param amounts The revoke amount of the leader
     /// @param week The week number
-    function updateClaims(address[] calldata leaders, uint256[] calldata amounts, uint256 week) external onlyRole(ADMIN_ROLE) {
+    function updateClaims(
+        address[] calldata leaders,
+        uint256[] calldata amounts,
+        uint256 week
+    ) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, amounts, week, false);
     }
 
@@ -237,7 +239,12 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param amounts The revoke amount of the leader
     /// @param week The week number
     /// @param isRevoke Boolean for revoke or update claims
-    function _updateOrRevokeClaim(address[] calldata leaders, uint256[] calldata amounts, uint256 week, bool isRevoke) private {
+    function _updateOrRevokeClaim(
+        address[] calldata leaders,
+        uint256[] calldata amounts,
+        uint256 week,
+        bool isRevoke
+    ) private {
         uint256 leadersLength = leaders.length;
 
         if (leadersLength == 0) {
