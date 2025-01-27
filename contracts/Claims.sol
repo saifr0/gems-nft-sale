@@ -97,11 +97,10 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
         uint256 prevEndTime = endTimes[currentWeek];
 
-        if (prevEndTime >= block.timestamp) {
-            uint256 weeksElapsed = (prevEndTime - block.timestamp) / ONE_WEEK_SECONDS;
-            // uint256 pastWeek = currentWeek;
+        if (block.timestamp >= prevEndTime) {
+            uint256 weeksElapsed = ((block.timestamp - prevEndTime) / ONE_WEEK_SECONDS) + 1;
+
             currentWeek += weeksElapsed;
-            // endTimes[currentWeek] = endTimes[pastWeek] + (weeksElapsed * ONE_WEEK_SECONDS);
             endTimes[currentWeek] = prevEndTime + (weeksElapsed * ONE_WEEK_SECONDS);
         }
 

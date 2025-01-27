@@ -133,10 +133,10 @@ async function main() {
     await claims.updatePresaleAddress(PreSale.target);
     return;
 
-    // MinerNFT deployed to ------- 0xBEd2372AE75A06ECDdFee084cf4e6178F2D3Febc
-    // NodeNft deployed to  ------- 0x3416FDD466b4c99265A983715a25DD1077C4b180
-    // Claims deployed to   ------  0x76cFee67693AfD51C2BFE98Fb5814E34a3B8183f
-    // PreSale deployed to-------- 0x9336a529d6f364147d5Ef75d92303A64A8B9fc62
+    // MinerNFT deployed to ------- 0xA69453C5A152Babb601530cD6e093eD50f39Fd8E
+    // NodeNft deployed to  ------- 0x342df459f484C9CCd6B568aeb89D7b2196872CB4
+    // Claims deployed to   ------  0xbaAD493F51c26216dAdFda88F9A29251a8A00369
+    // PreSale deployed to-------- 0x8Fde028c6c936dBE9732500d6b5C0dC434213Cd2
 
     // let claims = await hre.ethers.getContractAt('Claims', Claims.target);
     // await claims.updatePresaleAddress(PreSale.target);

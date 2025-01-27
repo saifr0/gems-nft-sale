@@ -152,9 +152,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Thrown when MAX_CAP is reached
     error MaxCapReached();
 
-    /// @notice Thrown when both price feed and reference price are non zero
-    error CodeSyncIssue();
-
     /// @notice Thrown if the sum of agents percentage is greater than required
     error InvalidPercentage();
 
@@ -464,8 +461,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert MaxCapReached();
         }
 
-        raisedUptoOneMillion += prices;
-        uint256 raised = raisedUptoOneMillion;
+        uint256 raised = raisedUptoOneMillion += prices;
 
         if (raised >= ONE_MILLION_DOLLAR) {
             uint256 repetitions = raised / ONE_MILLION_DOLLAR;
@@ -505,27 +501,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         }
     }
 
-    /// @dev Provides us live price of token from price feed or returns reference price and reverts if price is zero
-    function _validatePrice(IERC20 token, uint256 referenceTokenPrice, uint8 referenceNormalizationFactor) private view returns (uint256, uint8) {
-        TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(token);
-        if (tokenInfo.latestPrice != 0) {
-            if (referenceTokenPrice != 0 || referenceNormalizationFactor != 0) {
-                revert CodeSyncIssue();
-            }
-        }
-        //  If price feed isn't available,we fallback to the reference price
-        if (tokenInfo.latestPrice == 0) {
-            if (referenceTokenPrice == 0 || referenceNormalizationFactor == 0) {
-                revert ZeroValue();
-            }
-
-            tokenInfo.latestPrice = referenceTokenPrice;
-            tokenInfo.normalizationFactor = referenceNormalizationFactor;
-        }
-
-        return (tokenInfo.latestPrice, tokenInfo.normalizationFactor);
-    }
-
     /// @dev Checks zero address, if zero then reverts
     /// @param which The `which` address to check for zero address
     function _checkAddressZero(address which) private pure {
@@ -548,9 +523,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Calculates, transfers and update commissions
     function _transferAndUpdateCommissions(uint256 amount, address[] memory leaders, uint256[] memory percentages) private {
         _checkZeroValue(amount);
-        uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
+        // uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
         uint256 platformAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
-        uint256 projectAmount = (amount * PROJECT_PERCENTAGE_PPM) / PPM;
+        // uint256 projectAmount = (amount * PROJECT_PERCENTAGE_PPM) / PPM;
         uint256 toLength = leaders.length;
         uint256 sumPercentage;
 
@@ -566,8 +541,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ArrayLengthMismatch();
         }
 
-        for (uint256 j; j < toLength; ++j) {
-            sumPercentage += percentages[j];
+        ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
+
+        for (uint256 i; i < toLength; ++i) {
+            sumPercentage += percentages[i];
+            claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
         }
 
         if (sumPercentage == 0) {
@@ -584,15 +562,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             platformAmount += (((amount * CLAIMS_PERCENTAGE_PPM) / PPM) - equivalence);
         }
 
-        USDT.safeTransferFrom(msg.sender, projectWallet, projectAmount);
+        USDT.safeTransferFrom(msg.sender, projectWallet, (amount * PROJECT_PERCENTAGE_PPM) / PPM);
         USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
-        USDT.safeTransferFrom(msg.sender, burnWallet, burnAmount);
+        USDT.safeTransferFrom(msg.sender, burnWallet, (amount * BURN_PERCENTAGE_PPM) / PPM);
         USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
-        ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
+        // ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
 
-        for (uint256 i; i < toLength; ++i) {
-            claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
-        }
+        // for (uint256 i; i < toLength; ++i) {
+        //     claimInfo[i] = ClaimInfo({ token: USDT, amount: (amount * percentages[i]) / PPM });
+        // }
 
         claimsContract.addClaimInfo(leaders, claimInfo);
     }
