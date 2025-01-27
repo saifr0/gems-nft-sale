@@ -265,7 +265,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         // The input must have been signed by the presale signer
         _verifySignature(keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, GEMS)), v, r, s);
         uint256 purchaseAmount = (quantity * nodeNFTPrice * (10 ** referenceNormalizationFactor)) / referenceTokenPrice;
-        _calculateAndTransferAmounts(GEMS, purchaseAmount);
+        _checkZeroValue(purchaseAmount);
+        GEMS.safeTransferFrom(msg.sender, projectWallet, purchaseAmount);
         nodeNft.mint(msg.sender, quantity);
 
         emit NodeNftPurchased({ tokenPrice: referenceTokenPrice, by: msg.sender, amountPurchased: purchaseAmount, quantity: quantity });
@@ -277,7 +278,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     function purchaseMinerNFT(uint256 nodeNftId, uint256[3] calldata quantities) external canBuy nonReentrant {
         uint256[3] memory minerPrices = minerNFTPrices;
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, false);
-        _calculateAndTransferAmounts(USDT, purchaseAmount);
+        _checkZeroValue(purchaseAmount);
+        USDT.safeTransferFrom(msg.sender, projectWallet, purchaseAmount);
 
         emit MinerNftPurchased({ tokenPrice: latestPrice, by: msg.sender, minerPrices: minerPrices, quantities: quantities, amountPurchased: purchaseAmount });
     }
@@ -493,16 +495,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         return ((prices * (10 ** tokenInfo.normalizationFactor)) / tokenInfo.latestPrice, tokenInfo.latestPrice);
     }
 
-    /// @dev Calculates and transfers amount to wallets
-    function _calculateAndTransferAmounts(IERC20 token, uint256 amount) private {
-        _checkZeroValue(amount);
-        uint256 burnWalletAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
-        uint256 platformWalletAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
-        token.safeTransferFrom(msg.sender, burnWallet, burnWalletAmount);
-        token.safeTransferFrom(msg.sender, platformWallet, platformWalletAmount);
-        token.safeTransferFrom(msg.sender, projectWallet, amount - (burnWalletAmount + platformWalletAmount));
-    }
-
     /// @dev Checks value, if zero then reverts
     function _checkZeroValue(uint256 value) private pure {
         if (value == 0) {
@@ -539,8 +531,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Calculates, transfers and update commissions
     function _transferAndUpdateCommissions(uint256 amount, address[] memory leaders, uint256[] memory percentages) private {
         _checkZeroValue(amount);
-        // uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
-        uint256 platformAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
+        // // uint256 burnAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
+        // uint256 platformAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
         // uint256 projectAmount = (amount * PROJECT_PERCENTAGE_PPM) / PPM;
         uint256 toLength = leaders.length;
         uint256 sumPercentage;
@@ -576,12 +568,13 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 equivalence = (amount * sumPercentage) / PPM;
 
         if (sumPercentage < CLAIMS_PERCENTAGE_PPM) {
-            platformAmount += (((amount * CLAIMS_PERCENTAGE_PPM) / PPM) - equivalence);
+            // platformAmount += (((amount * CLAIMS_PERCENTAGE_PPM) / PPM) - equivalence);
+            amount = amount - equivalence;
         }
 
-        USDT.safeTransferFrom(msg.sender, projectWallet, (amount * PROJECT_PERCENTAGE_PPM) / PPM);
-        USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
-        USDT.safeTransferFrom(msg.sender, burnWallet, (amount * BURN_PERCENTAGE_PPM) / PPM);
+        USDT.safeTransferFrom(msg.sender, projectWallet, amount;
+        // USDT.safeTransferFrom(msg.sender, platformWallet, platformAmount);
+        // USDT.safeTransferFrom(msg.sender, burnWallet, (amount * BURN_PERCENTAGE_PPM) / PPM);
         USDT.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
         // ClaimInfo[] memory claims = new ClaimInfo[](toLength);
 
