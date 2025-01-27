@@ -32,10 +32,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev The constant value helps in calculating values
     uint256 private constant PRICE_ACCRETION_PERENTAGE_PPM = 50_000;
 
-    // TO DO delete
     /// @dev The constant value of one million in dollars
-    // uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
     /// @dev The constant value helps in calculating platform amount
     uint256 private constant PLATFORM_PERCENTAGE_PPM = 100_000;
@@ -45,16 +43,15 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
-    // TO DO DELETE
+
     /// @notice The maximum amount of money a project hopes to raise in order to proceed with the project
-    // uint256 public constant MAX_CAP = 40_000_000e6;
-    uint256 public constant MAX_CAP = 40_000e6;
+    uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
 
     /// @notice The address of the token registry contract
-    ITokenRegistry public immutable tokenRegistry;
+    ITokenRegistry public tokenRegistry;
 
     /// @notice The address of the miner nft contract
     IMinerNft public immutable minerNft;
@@ -136,6 +133,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         address[] leaders,
         uint256[] percentages
     );
+
+    // @dev Emitted when address of  token regitry contract is updated
+    event TokenRegistryUpdated(ITokenRegistry oldTokenRegistry, ITokenRegistry newTokenRegistry);
 
     /// @notice Thrown when address is blacklisted
     error Blacklisted();
@@ -407,6 +407,20 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         blacklistAddress[which] = access;
     }
 
+    /// @notice Changes token registry contract address
+    /// @param newTokenRegistry The address of the new token registry contract
+    function updateTokenRegistry(ITokenRegistry newTokenRegistry) external checkAddressZero(address(newTokenRegistry)) onlyOwner {
+        ITokenRegistry oldTokenRegistry = tokenRegistry;
+
+        if (oldTokenRegistry == newTokenRegistry) {
+            revert IdenticalValue();
+        }
+
+        emit TokenRegistryUpdated({ oldTokenRegistry: oldTokenRegistry, newTokenRegistry: newTokenRegistry });
+
+        tokenRegistry = newTokenRegistry;
+    }
+
     /// @notice Changes the node nft prices
     /// @param newPrice The new price of node nft
     function updateNodeNftPrice(uint256 newPrice) external onlyOwner {
@@ -544,8 +558,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[] memory claims = new uint256[](toLength);
 
         for (uint256 i; i < toLength; ++i) {
-            sumPercentage += percentages[i];
-            claims[i] = (amount * percentages[i]) / PPM;
+            uint256 percentage = percentages[i];
+            sumPercentage += percentage;
+            claims[i] = (amount * percentage) / PPM;
         }
 
         if (sumPercentage == 0) {

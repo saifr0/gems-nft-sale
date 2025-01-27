@@ -14,13 +14,9 @@ import { InvalidData, ZeroValue, ArrayLengthMismatch, ZeroAddress, IdenticalValu
 /// @notice Implements the claiming of the leader's commissions
 contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
-    // TO DO delete
-    /// @dev The constant value helps in calculating time
-    // uint256 private constant ONE_WEEK_SECONDS = 604800;
-    uint256 private constant ONE_WEEK_SECONDS = 600;
 
-    /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
-    bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");
+    /// @dev The constant value helps in calculating time
+    uint256 private constant ONE_WEEK_SECONDS = 604800;
 
     /// @notice The address of the USDT contract
     IERC20 public immutable USDT;
@@ -40,7 +36,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice Stores the end time of the given week number
     mapping(uint256 week => uint256 endTime) public endTimes;
 
-    /// @notice Stores the claim amount of token in a week of the user
+    /// @notice Stores the claim amount of the leader
     mapping(address => mapping(uint256 => uint256)) public pendingClaims;
 
     /// @dev Emitted when claim amount is set for the addresses
@@ -52,7 +48,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @dev Emitted when address of funds wallet is updated
     event FundsWalletUpdated(address oldFundsWallet, address newFundsWallet);
 
-    /// @dev Emitted when token presale contract is updated
+    /// @dev Emitted when presale contract is updated
     event PresaleUpdated(address prevAddress, address newAddress);
 
     /// @dev Emitted when claim is revoked for the user
@@ -76,7 +72,6 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
         fundsWallet = fundsAddress;
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(COMMISSIONS_MANAGER, ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, msg.sender);
         currentWeek++;
         endTimes[currentWeek] = block.timestamp + ONE_WEEK_SECONDS;
@@ -130,17 +125,17 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         }
     }
 
-    /// @notice Revokes leader claim for the given token
+    /// @notice Revokes leader claim
     /// @param leaders The addresses of the leaders
-    /// @param amounts The revoke amount of each token of the leader
+    /// @param amounts The revoke amount of the leader
     /// @param week The week number
     function revokeLeaderClaim(address[] calldata leaders, uint256[] calldata amounts, uint256 week) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, amounts, week, true);
     }
 
-    /// @notice Updates leader claim for the given token
+    /// @notice Updates leader claim
     /// @param leaders The addresses of the leaders
-    /// @param amounts The revoke amount of each token of the leader
+    /// @param amounts The revoke amount of the leader
     /// @param week The week number
     function updateClaims(address[] calldata leaders, uint256[] calldata amounts, uint256 week) external onlyRole(ADMIN_ROLE) {
         _updateOrRevokeClaim(leaders, amounts, week, false);
@@ -182,14 +177,9 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         fundsWallet = newFundsWallet;
     }
 
-    /// @notice Gives max allowance of tokens to presale contract
-    /// @param tokens List of tokens to approve
-    function approveAllowance(IERC20[] calldata tokens) external onlyRole(ADMIN_ROLE) {
-        uint256 tokensLength = tokens.length;
-
-        for (uint256 i; i < tokensLength; ++i) {
-            tokens[i].forceApprove(address(presale), type(uint256).max);
-        }
+    /// @notice Gives max allowance of USDT to presale contract
+    function approveAllowance() external onlyRole(ADMIN_ROLE) {
+        USDT.forceApprove(address(presale), type(uint256).max);
     }
 
     /// @notice Claims the amount in a given week
@@ -211,9 +201,38 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         emit FundsClaimed({ by: msg.sender, week: week, amount: amount });
     }
 
-    /// @dev Revokes or updates leader claims for the given token
+    /// @notice Claims the amount in a given week
+    /// @param _weeks The array of weeks in which you want to claim
+    function claimAll(uint256[] calldata _weeks) external nonReentrant {
+        if (_weeks.length == 0) {
+            revert ZeroLengthArray();
+        }
+
+        uint256 amount;
+
+        for (uint256 i; i < _weeks.length; ++i) {
+            uint256 week = _weeks[i];
+
+            if (block.timestamp < endTimes[week]) {
+                continue;
+            }
+
+            amount += pendingClaims[msg.sender][week];
+            delete pendingClaims[msg.sender][week];
+
+            emit FundsClaimed({ by: msg.sender, week: week, amount: amount });
+        }
+
+        if (amount == 0) {
+            revert ZeroValue();
+        }
+
+        USDT.safeTransfer(msg.sender, amount);
+    }
+
+    /// @dev Revokes or updates leader claims
     /// @param leaders The addresses of the leaders
-    /// @param amounts The revoke amount of each token of the leader
+    /// @param amounts The revoke amount of the leader
     /// @param week The week number
     /// @param isRevoke Boolean for revoke or update claims
     function _updateOrRevokeClaim(address[] calldata leaders, uint256[] calldata amounts, uint256 week, bool isRevoke) private {
