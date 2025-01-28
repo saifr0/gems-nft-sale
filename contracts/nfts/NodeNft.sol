@@ -99,9 +99,7 @@ contract NodeNft is ERC721A, Ownable2Step {
     /// @param tokenId The token id
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) _revert(URIQueryForNonexistentToken.selector);
-
-        string memory baseURI = _baseURI();
-        return bytes(baseURI).length != 0 ? string(abi.encodePacked(baseURI, "Node")) : "";
+        return baseUri;
     }
 
     /// @dev The function overrides existing function

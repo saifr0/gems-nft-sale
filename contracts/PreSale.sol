@@ -59,7 +59,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
     uint256 public accretionThreshold;
 
-    /// @notice The price of the miner nft
+    /// @notice The price of the node nft
     uint256 public nodeNFTPrice;
 
     /// @notice The total usd raised
@@ -77,7 +77,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the miner funds wallet
     address public minerFundsWallet;
 
-    /// @notice The prices of the node nfts
+    /// @notice The prices of the miner nfts
     uint256[3] public minerNFTPrices;
 
     /// @notice Gives info about address's permission
@@ -166,17 +166,17 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @dev Constructor
     /// @param nodeFundsWalletAddress The address of node funds wallet
-    /// @param minerFundsWalletAddress The address of node funds wallet
+    /// @param minerFundsWalletAddress The address of miner funds wallet
     /// @param signerAddress The address of signer wallet
     /// @param owner The address of owner wallet
-    /// @param gemsAddress The address gems contract
+    /// @param gemsAddress The address of gems contract
     /// @param usdtAddress The address of usdt contract
     /// @param claimsAddress The address of claim contract
     /// @param minerNftAddress The address of miner nft contract
-    /// @param nodeNftAddress The address of miner nft contract
+    /// @param nodeNftAddress The address of node nft contract
     /// @param tokenRegistryAddress The address of token registry contract
-    /// @param nodeNftPriceInit The price of minor nft
-    /// @param minerNftPricesInit The prices of node nfts
+    /// @param nodeNftPriceInit The price of node nft
+    /// @param minerNftPricesInit The prices of miner nfts
     constructor(
         address nodeFundsWalletAddress,
         address minerFundsWalletAddress,
@@ -571,6 +571,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         if (sumPercentage < CLAIMS_PERCENTAGE_PPM) {
             amount -= equivalence;
+        } else {
+            amount -= (amount * CLAIMS_PERCENTAGE_PPM) / PPM;
         }
 
         USDT.safeTransferFrom(msg.sender, minerFundsWallet, amount);

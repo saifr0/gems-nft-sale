@@ -30,7 +30,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice The address of funds wallet
     address public fundsWallet;
 
-    /// @notice The address of funds wallet
+    /// @notice The current week number
     uint256 public currentWeek;
 
     /// @notice Stores the end time of the given week number

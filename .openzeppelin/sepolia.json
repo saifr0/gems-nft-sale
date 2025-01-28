@@ -1,0 +1,159 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x060A7608a4Fd500943dEa825FFBad1fDc93e8365",
+      "txHash": "0xeac3fd661f1175670c478f8b76fb080f03aff94177b058db3c194395214bb6db",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "2ab8807dfdc6601440fcc897064e65d93973d08f6756815d2cf5e58b40d904cf": {
+      "address": "0xF5EC2E85969326aaA96468fd71c66b5Cb006ba48",
+      "txHash": "0x62b8e4f3a7c37190ad753f506f9d2f642cb3e45b28624beb9e1506cefbcbfe0f",
+      "layout": {
+        "solcVersion": "0.8.25",
+        "storage": [
+          {
+            "label": "tokenData",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_contract(IERC20)1321,t_struct(PriceFeedData)8827_storage)",
+            "contract": "TokenRegistry",
+            "src": "contracts/TokenRegistry.sol:25"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "TokenRegistry",
+            "src": "contracts/TokenRegistry.sol:111"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)119_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)59_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_contract(AggregatorV3Interface)45": {
+            "label": "contract AggregatorV3Interface",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)1321": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_contract(IERC20)1321,t_struct(PriceFeedData)8827_storage)": {
+            "label": "mapping(contract IERC20 => struct TokenRegistry.PriceFeedData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(PriceFeedData)8827_storage": {
+            "label": "struct TokenRegistry.PriceFeedData",
+            "members": [
+              {
+                "label": "priceFeed",
+                "type": "t_contract(AggregatorV3Interface)45",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "normalizationFactor",
+                "type": "t_uint8",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "tolerance",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
