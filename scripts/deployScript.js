@@ -39,8 +39,8 @@ async function main() {
     const minerNftContractAddress = '';
     const nodeNftContractAddress = '';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
-    const nodesNFTPriceInit = '100000000';
-    const minersNFTPriceInit = ['50000000', '100000000', '150000000'];
+    const nodesNFTPriceInit = '99000000';
+    const minersNFTPriceInit = ['199000000', '3999000000', '19999000000'];
 
     // -------------------------------- TokenRegistry------------------------------------------ //
     //*this is simple token registry deployment script, not the upgradable

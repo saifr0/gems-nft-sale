@@ -41,9 +41,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
 
-    /// @notice The address of the token registry contract
-    ITokenRegistry public tokenRegistry;
-
     /// @notice The address of the miner nft contract
     IMinerNft public immutable minerNft;
 
@@ -55,6 +52,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice The address of the USDT contract
     IERC20 public immutable USDT;
+
+    /// @notice The address of the token registry contract
+    ITokenRegistry public tokenRegistry;
 
     /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
     uint256 public accretionThreshold;
@@ -148,9 +148,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when array length of leaders are greater than required
     error InvalidArrayLength();
-
-    /// @notice Thrown when caller does not hold nft id
-    error CallerNotOwner();
 
     /// @dev Restricts when updating wallet/contract address with zero address
     modifier checkAddressZero(address which) {
@@ -270,11 +267,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @notice Purchases miner nft with USDT
-    /// @param nodeNftId The node nft id that user holds
     /// @param quantities The amount of each miner nft that user will purchase
-    function purchaseMinerNFT(uint256 nodeNftId, uint256[3] calldata quantities) external canBuy nonReentrant {
+    function purchaseMinerNFT(uint256[3] calldata quantities) external canBuy nonReentrant {
         uint256[3] memory minerPrices = minerNFTPrices;
-        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, false);
+        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(quantities, false);
         _checkZeroValue(purchaseAmount);
         USDT.safeTransferFrom(msg.sender, minerFundsWallet, purchaseAmount);
 
@@ -288,7 +284,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @notice Purchases miner nft on discounted price
-    /// @param nodeNftId The node nft id that user holds
     /// @param deadline The deadline is validity of the signature
     /// @param quantities The amount of each miner nft that user will purchase
     /// @param percentages The leader's percentages
@@ -298,7 +293,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
     function purchaseMinerNFTDiscount(
-        uint256 nodeNftId,
         uint256 deadline,
         uint256[3] calldata quantities,
         uint256[] calldata percentages,
@@ -316,7 +310,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         }
 
         uint256[3] memory minerPrices = minerNFTPrices;
-        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(nodeNftId, quantities, true);
+        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(quantities, true);
         _transferAndUpdateCommissions(purchaseAmount, leaders, percentages);
 
         emit MinerNftPurchasedDiscounted({
@@ -440,15 +434,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     }
 
     /// @dev Processes miner nft purchase
-    function _processPurchase(
-        uint256 nodeNftId,
-        uint256[3] calldata quantities,
-        bool isDiscounted
-    ) private returns (uint256, uint256) {
-        if (nodeNft.ownerOf(nodeNftId) != msg.sender) {
-            revert CallerNotOwner();
-        }
-
+    function _processPurchase(uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
         TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(USDT);
 
         if (tokenInfo.latestPrice == 0 || tokenInfo.normalizationFactor == 0) {
