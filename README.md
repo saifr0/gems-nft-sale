@@ -1,3 +1,3 @@
-# Incentive Private Sale
+# GEMS Node Miners Sale
 
-This project contains of incentive token presale and institution presale contract and hardhat deployment scripts.
+This project contains GEMS node miner presale and claiming of user's rewards.
