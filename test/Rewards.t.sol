@@ -30,7 +30,8 @@ contract PreSaleTest is Test {
     address funds = 0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D;
 
     IERC20[] tokens;
-    uint256[] amounts;
+    uint256[] minerRewards;
+    uint256[] nodeRewards;
 
     Rewards public rewardsContract;
     NodeNft public nodeNftContract;
@@ -44,10 +45,15 @@ contract PreSaleTest is Test {
         tokens[1] = GEMS;
         tokens[2] = USDC;
 
-        amounts = new uint256[](3);
-        amounts[0] = 5000000;
-        amounts[1] = 5000000000000000000;
-        amounts[2] = 5000000;
+        minerRewards = new uint256[](3);
+        minerRewards[0] = 5000000;
+        minerRewards[1] = 3000000000000000000;
+        minerRewards[2] = 2000000;
+
+        nodeRewards = new uint256[](3);
+        nodeRewards[0] = 5000000;
+        nodeRewards[1] = 3000000000000000000;
+        nodeRewards[2] = 2000000;
 
         // -----------------------------------  deal ----------------------------------- //
         deal(address(USDT), user, 2323420_000_000000 * 1e6);
@@ -61,7 +67,10 @@ contract PreSaleTest is Test {
             funds,
             owner,
             IMinerNft(address(minerNftContract)),
-            INodeNft(address(nodeNftContract))
+            INodeNft(address(nodeNftContract)),
+            tokens,
+            minerRewards,
+            nodeRewards
         );
 
         // -----------------------------------  Updating user as presale to mint ----------------------------------- //
@@ -74,8 +83,13 @@ contract PreSaleTest is Test {
     function testRewards() external {
         // -------------------------------- minting  ------------------------------------------ //
         vm.startPrank(user);
-        nodeNftContract.mint(user, 2);
+        nodeNftContract.mint(user, 4);
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        minerNftContract.mint(user, 0, 2);
         minerNftContract.mint(user, 1, 2);
+        minerNftContract.mint(user, 2, 2);
         vm.stopPrank();
 
         // ------------------------------- enabling rewards  ------------------------------------------ //
@@ -90,9 +104,19 @@ contract PreSaleTest is Test {
         USDC.forceApprove(address(rewardsContract), USDC.balanceOf(user));
         vm.stopPrank();
 
-        // ------------------------------- claiming rewards  ------------------------------------------ //
+        // ------------------------------- claiming miner rewards  ------------------------------------------ //
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = 0;
+        ids[1] = 1;
+        ids[2] = 2;
+
         vm.startPrank(user);
-        rewardsContract.claimRewards(1, tokens, amounts);
+        rewardsContract.claimMinerRewards(ids);
+        vm.stopPrank();
+
+        // ------------------------------- claiming node rewards  ------------------------------------------ //
+        vm.startPrank(user);
+        rewardsContract.claimNodeRewards();
         vm.stopPrank();
     }
 }
