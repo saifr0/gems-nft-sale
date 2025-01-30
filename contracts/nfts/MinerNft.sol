@@ -53,6 +53,13 @@ contract MinerNft is ERC1155, Ownable2Step {
         _mint(to, id, quantity, "");
     }
 
+    /// @notice Returns the user's nfts balance
+    /// @param account The address of the user
+    /// @param id The nft id
+    function minerNFtBalanceOf(address account, uint256 id) external view returns (uint256) {
+        return balanceOf(account, id);
+    }
+
     /// @notice Updates presale contract address in claims
     /// @param newPresale The address of the presale contract
     function updatePresaleAddress(address newPresale) external onlyOwner {
