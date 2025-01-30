@@ -14,8 +14,14 @@ contract MinerNft is ERC1155, Ownable2Step {
     /// @notice Returns the address of the presale contract
     address public presale;
 
+    /// @notice Returns the access info of the transfer
+    bool public transferEnabled;
+
     /// @dev Emitted when token presale contract is updated
     event PresaleUpdated(address prevAddress, address newAddress);
+
+    /// @dev Emitted when transfer enabled is updated
+    event TransferEnabled(bool enabled);
 
     /// @notice Thrown when caller is not presale contract
     error OnlyPresale();
@@ -23,9 +29,13 @@ contract MinerNft is ERC1155, Ownable2Step {
     /// @notice Thrown when id to mint is invalid
     error InvalidId();
 
+    /// @notice Thrown when trying to transfer nft while restricted
+    error NotAllowed();
+
     /// @dev Constructor
     /// @param owner The address of owner wallet
-    constructor(address owner) ERC1155("") Ownable(owner) {}
+    /// @param newUri The new base uri of the tokens
+    constructor(address owner, string memory newUri) ERC1155(newUri) Ownable(owner) {}
 
     /// @notice Mints nft to `to`, only callable by presale contract
     /// @param to The nft will be minted to `to`
@@ -61,6 +71,20 @@ contract MinerNft is ERC1155, Ownable2Step {
         presale = newPresale;
     }
 
+    /// @notice Enables or disables transfer
+    /// @param enabled The decision to allow transfer or not
+    function enableTransfer(bool enabled) external onlyOwner {
+        bool oldTransferEnabled = transferEnabled;
+
+        if (oldTransferEnabled == enabled) {
+            revert IdenticalValue();
+        }
+
+        emit TransferEnabled({ enabled: enabled });
+
+        transferEnabled = enabled;
+    }
+
     /// @notice The function updates uri of the tokens
     /// @param newUri The new base uri of the tokens
     function setBaseUri(string memory newUri) external onlyOwner {
@@ -72,5 +96,21 @@ contract MinerNft is ERC1155, Ownable2Step {
     function uri(uint256 tokenId) public view override returns (string memory) {
         string memory baseUri = super.uri(tokenId);
         return bytes(baseUri).length > 0 ? string.concat(baseUri, tokenId.toString()) : "";
+    }
+
+    /// @inheritdoc ERC1155
+    /// @dev Overridden to change block transfer when restricted
+    function _updateWithAcceptanceCheck(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory values,
+        bytes memory data
+    ) internal virtual override {
+        if (from != address(0) && !transferEnabled) {
+            revert NotAllowed();
+        }
+
+        super._updateWithAcceptanceCheck(from, to, ids, values, data);
     }
 }

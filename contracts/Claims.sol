@@ -8,7 +8,7 @@ import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/Reentran
 
 import { IClaims } from "./interfaces/IClaims.sol";
 
-import { InvalidData, ZeroValue, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray, InvalidSignature } from "./utils/Common.sol";
+import { InvalidData, ZeroValue, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray } from "./utils/Common.sol";
 
 /// @title Claims contract
 /// @notice Implements the claiming of the leader's commissions
@@ -177,11 +177,6 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         emit FundsWalletUpdated({ oldFundsWallet: oldFundsWallet, newFundsWallet: newFundsWallet });
 
         fundsWallet = newFundsWallet;
-    }
-
-    /// @notice Gives max allowance of USDT to presale contract
-    function approveAllowance() external onlyRole(ADMIN_ROLE) {
-        USDT.forceApprove(address(presale), type(uint256).max);
     }
 
     /// @notice Claims the amount in a given week

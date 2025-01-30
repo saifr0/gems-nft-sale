@@ -32,7 +32,9 @@ contract NodeNft is ERC721A, Ownable2Step {
 
     /// @dev Constructor
     /// @param owner The address of owner wallet
-    constructor(address owner) ERC721A("Node-NFT", "Node-NFT") Ownable(owner) {}
+    constructor(address owner, string memory uri) ERC721A("Gems Nodes", "GNODE") Ownable(owner) {
+        baseUri = uri;
+    }
 
     /// @notice Mints nft to `to`, only callable by presale contract
     /// @param to The nft will be minted to `to`
