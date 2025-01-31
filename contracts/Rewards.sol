@@ -4,11 +4,10 @@ pragma solidity 0.8.25;
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { ERC721A } from "erc721a/contracts/ERC721A.sol";
 
 import { IMinerNft } from "./interfaces/IMinerNft.sol";
 import { INodeNft } from "./interfaces/INodeNft.sol";
-
-import { ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidData, ZeroValue } from "./utils/Common.sol";
 
 /// @title Rewards contract
 /// @notice Implements claiming of the user's miner and node rewards
@@ -38,7 +37,7 @@ contract Rewards is Ownable2Step, ReentrancyGuardTransient {
     address public fundsWallet;
 
     /// @notice Gives info about user's miner rewards claim
-    mapping(address => bool) public minerClaimed;
+    mapping(address => mapping(uint256 => bool)) public minerClaimed;
 
     /// @notice Gives info about user's nodes rewards claim
     mapping(address => bool) public nodeClaimed;
@@ -66,6 +65,21 @@ contract Rewards is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when trying to claim rewards while restricted
     error NotAllowed();
+
+    /// @notice Thrown when updating an address with zero address
+    error ZeroAddress();
+
+    /// @notice Thrown when updating with the same value as previously stored
+    error IdenticalValue();
+
+    /// @notice Thrown when two array lengths does not match
+    error ArrayLengthMismatch();
+
+    /// @notice Thrown when value to transfer is zero
+    error ZeroValue();
+
+    /// @notice Thrown when input array length is zero
+    error InvalidData();
 
     /// @dev Constructor
     /// @param fundsWalletAddress The address of funds wallet
@@ -212,17 +226,15 @@ contract Rewards is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Claims the miner nft rewards
     /// @param ids The nft ids that user holds
     function claimMinerRewards(uint256[] calldata ids) external nonReentrant {
-        if (minerClaimed[msg.sender]) {
-            revert AlreadyClaimed();
-        }
-
-        for (uint256 i = 0; i < ids.length; ++i) {
+        for (uint256 i; i < ids.length; ++i) {
             uint256 id = ids[i];
+            if (minerClaimed[msg.sender][id]) {
+                revert AlreadyClaimed();
+            }
             uint256 minerBalance = minerNft.balanceOf(msg.sender, id);
             _claimRewards(minerBalance);
+            minerClaimed[msg.sender][id] = true;
         }
-
-        minerClaimed[msg.sender] = true;
     }
 
     /// @notice Claims the node nft rewards
@@ -251,6 +263,23 @@ contract Rewards is Ownable2Step, ReentrancyGuardTransient {
         rewardEnabled = enabled;
     }
 
+    /// @notice Returns the total rewards for the user based on their token balances and NFT holdings
+    /// @param token The address of the token
+    function tokenRewards(IERC20 token) external view returns (uint256 totalMinerReward, uint256 totalNodeReward) {
+        for (uint256 i; i < tokens.length; i++) {
+            if (tokens[i] == token) {
+                uint256 nodeBalance = nodeNft.balanceOf(msg.sender);
+                totalNodeReward = nodeBalance * nodeRewards[i];
+
+                uint256 ids = 3;
+                for (uint256 j; j < ids; ++j) {
+                    uint256 minerBalance = minerNft.balanceOf(msg.sender, j);
+                    totalMinerReward += minerBalance * minerRewards[i];
+                }
+            }
+        }
+    }
+
     /// @dev Processes claiming of miner and node rewards
     function _claimRewards(uint256 balance) private {
         uint256 tokensLength = tokens.length;
@@ -260,7 +289,7 @@ contract Rewards is Ownable2Step, ReentrancyGuardTransient {
         }
 
         if (balance > 0) {
-            for (uint256 i = 0; i < tokensLength; ++i) {
+            for (uint256 i; i < tokensLength; ++i) {
                 uint256 amount = nodeRewards[i] * balance;
                 tokens[i].safeTransferFrom(fundsWallet, msg.sender, amount);
 

@@ -5,11 +5,10 @@ import { Test, console } from "../lib/forge-std/src/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../contracts/utils/Common.sol";
-
 import { Rewards } from "../contracts/Rewards.sol";
-import { NodeNft } from "../contracts/nfts/NodeNft.sol";
-import { MinerNft } from "../contracts/nfts/MinerNft.sol";
+
+import { MinerNft } from "../test/Helpers/MinerNft.sol";
+import { NodeNft } from "../test/Helpers/NodeNft.sol";
 
 import { IMinerNft } from "../contracts/interfaces/IMinerNft.sol";
 import { INodeNft } from "../contracts/interfaces/INodeNft.sol";
@@ -26,7 +25,7 @@ contract PreSaleTest is Test {
     IERC20 GEMS = IERC20(0x3010ccb5419F1EF26D40a7cd3F0d707a0fa127Dc);
 
     address user = 0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D;
-    address owner = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
+    address owner = 0x3B764564639032F61fdA5360727577A4CbCe75cB;
     address funds = 0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D;
 
     IERC20[] tokens;
@@ -34,8 +33,11 @@ contract PreSaleTest is Test {
     uint256[] nodeRewards;
 
     Rewards public rewardsContract;
-    NodeNft public nodeNftContract;
-    MinerNft public minerNftContract;
+    INodeNft public nodeNftContract;
+    IMinerNft public minerNftContract;
+
+    NodeNft public nodeNft;
+    MinerNft public minerNft;
 
     function setUp() public {
         // -----------------------------------   ----------------------------------- //
@@ -61,35 +63,31 @@ contract PreSaleTest is Test {
         deal(address(USDC), user, 2323420_000_000000 * 1e6);
 
         // -----------------------------------  Contracts ----------------------------------- //
-        nodeNftContract = new NodeNft(owner, "");
-        minerNftContract = new MinerNft(owner, "");
+        nodeNft = new NodeNft();
+        minerNft = new MinerNft();
+        nodeNftContract = INodeNft(address(nodeNft));
+        minerNftContract = IMinerNft(address(minerNft));
         rewardsContract = new Rewards(
             funds,
             owner,
-            IMinerNft(address(minerNftContract)),
-            INodeNft(address(nodeNftContract)),
+            minerNftContract,
+            nodeNftContract,
             tokens,
             minerRewards,
             nodeRewards
         );
-
-        // -----------------------------------  Updating user as presale to mint ----------------------------------- //
-        vm.startPrank(owner);
-        nodeNftContract.updatePresaleAddress(user);
-        minerNftContract.updatePresaleAddress(user);
-        vm.stopPrank();
     }
 
     function testRewards() external {
         // -------------------------------- minting  ------------------------------------------ //
         vm.startPrank(user);
-        nodeNftContract.mint(user, 4);
+        nodeNft.mint(user, 4);
         vm.stopPrank();
 
         vm.startPrank(user);
-        minerNftContract.mint(user, 0, 2);
-        minerNftContract.mint(user, 1, 2);
-        minerNftContract.mint(user, 2, 2);
+        minerNft.mint(user, 0, 1);
+        minerNft.mint(user, 1, 1);
+        minerNft.mint(user, 2, 1);
         vm.stopPrank();
 
         // ------------------------------- enabling rewards  ------------------------------------------ //
@@ -102,6 +100,12 @@ contract PreSaleTest is Test {
         USDT.forceApprove(address(rewardsContract), USDT.balanceOf(user));
         GEMS.forceApprove(address(rewardsContract), GEMS.balanceOf(user));
         USDC.forceApprove(address(rewardsContract), USDC.balanceOf(user));
+        vm.stopPrank();
+
+        // ------------------------------- Getting user rewards for a token  ------------------------------------------ //
+
+        vm.startPrank(user);
+        rewardsContract.tokenRewards(GEMS);
         vm.stopPrank();
 
         // ------------------------------- claiming miner rewards  ------------------------------------------ //
