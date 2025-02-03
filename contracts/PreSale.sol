@@ -26,9 +26,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev The constant value helps in calculating values
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
-    /// @dev The constant value helps in calculating values
-    uint256 private constant PRICE_ACCRETION_PERENTAGE_PPM = 50_000;
-
     /// @dev The constant value of one million in dollars
     uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
@@ -55,6 +52,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice The address of the token registry contract
     ITokenRegistry public tokenRegistry;
+
+    /// @notice The value helps in calculating new price of miner
+    uint256 public priceAccretionPercentagePPM;
 
     /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
     uint256 public accretionThreshold;
@@ -128,6 +128,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     // @dev Emitted when address of  token regitry contract is updated
     event TokenRegistryUpdated(ITokenRegistry oldTokenRegistry, ITokenRegistry newTokenRegistry);
 
+    // @dev Emitted when miner price accretion percentage is updated
+    event PriceAccretionPercentageUpdated(uint256 oldPriceAccretionPercent, uint256 newPriceAccretionPercent);
+
     /// @notice Thrown when address is blacklisted
     error Blacklisted();
 
@@ -136,9 +139,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when sign deadline is expired
     error DeadlineExpired();
-
-    /// @notice Thrown when caller is not claims contract
-    error OnlyClaims();
 
     /// @notice Thrown when MAX_CAP is reached
     error MaxCapReached();
@@ -173,6 +173,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param nodeNftAddress The address of node nft contract
     /// @param tokenRegistryAddress The address of token registry contract
     /// @param nodeNftPriceInit The price of node nft
+    /// @param priceAccretionPercentagePPMInit The price accretion percentage value, it can be zero
     /// @param minerNftPricesInit The prices of miner nfts
     constructor(
         address nodeFundsWalletAddress,
@@ -186,6 +187,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         INodeNft nodeNftAddress,
         ITokenRegistry tokenRegistryAddress,
         uint256 nodeNftPriceInit,
+        uint256 priceAccretionPercentagePPMInit,
         uint256[3] memory minerNftPricesInit
     )
         Ownable(owner)
@@ -220,6 +222,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         tokenRegistry = tokenRegistryAddress;
         nodeNFTPrice = nodeNftPriceInit;
         minerNFTPrices = minerNftPricesInit;
+        priceAccretionPercentagePPM = priceAccretionPercentagePPMInit;
     }
 
     /// @notice Purchases node nfts with GEMS
@@ -433,6 +436,23 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         nodeNFTPrice = newPrice;
     }
 
+    /// @notice Changes the miner price accretion percentage
+    /// @param newPriceAccretionPercent The new price accretion percentage value
+    function updateMinerPriceAccretionPercent(uint256 newPriceAccretionPercent) external onlyOwner {
+        uint256 oldPriceAccretionPercent = priceAccretionPercentagePPM;
+
+        if (newPriceAccretionPercent == oldPriceAccretionPercent) {
+            revert IdenticalValue();
+        }
+
+        emit PriceAccretionPercentageUpdated({
+            oldPriceAccretionPercent: oldPriceAccretionPercent,
+            newPriceAccretionPercent: newPriceAccretionPercent
+        });
+
+        priceAccretionPercentagePPM = newPriceAccretionPercent;
+    }
+
     /// @dev Processes miner nft purchase
     function _processPurchase(uint256[3] calldata quantities, bool isDiscounted) private returns (uint256, uint256) {
         TokenInfo memory tokenInfo = tokenRegistry.getLatestPrice(USDT);
@@ -473,7 +493,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
             for (uint256 i; i < quantityLength; ++i) {
                 for (uint256 j; j < repetitions; ++j) {
-                    minerNFTPrices[i] += (minerNFTPrices[i] * PRICE_ACCRETION_PERENTAGE_PPM) / PPM;
+                    minerNFTPrices[i] += (minerNFTPrices[i] * priceAccretionPercentagePPM) / PPM;
                 }
             }
         }
