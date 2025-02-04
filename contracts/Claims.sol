@@ -16,7 +16,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using Address for address payable;
 
     /// @dev The constant value helps in calculating time
-    uint256 private constant ONE_WEEK_SECONDS = 604800;
+    uint256 private constant ONE_WEEK_SECONDS = 600;
 
     /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
     bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");
@@ -40,17 +40,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice Stores the end time of the given week number
     mapping(uint256 week => uint256 endTime) public endTimes;
 
-    /// @notice Stores the enabled/disabled status of a round
-    bool public isEnabled;
-
     /// @dev Emitted when claim amount is set for the addresses
     event ClaimSet(address indexed to, uint256 indexed week, uint256 endTime, ClaimInfo claimInfo);
 
     /// @dev Emitted when claim amount is claimed
     event FundsClaimed(address indexed by, IERC20 token, uint256 indexed week, uint256 amount);
-
-    /// @dev Emitted when claim access changes for the round
-    event ClaimsEnableUpdated(bool oldAccess, bool newAccess);
 
     /// @dev Emitted when address of funds wallet is updated
     event FundsWalletUpdated(address oldFundsWallet, address newFundsWallet);
@@ -188,40 +182,6 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         fundsWallet = newFundsWallet;
     }
 
-    /// @notice Changes the claim access of the contract
-    /// @param status The access status of the round
-    function enableClaims(bool status) external onlyRole(COMMISSIONS_MANAGER) {
-        bool oldAccess = isEnabled;
-
-        if (oldAccess == status) {
-            revert IdenticalValue();
-        }
-
-        emit ClaimsEnableUpdated({ oldAccess: oldAccess, newAccess: status });
-
-        isEnabled = status;
-    }
-
-    // /// @notice Claims the amount in a given round
-    // function claim(IERC20[] calldata tokens) external nonReentrant {
-    //     mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender];
-    //     uint256 tokensLength = tokens.length;
-
-    //     for (uint256 i; i < tokensLength; ++i) {
-    //         IERC20 token = tokens[i];
-    //         uint256 amount = claimInfo[token];
-
-    //         if (amount == 0) {
-    //             continue;
-    //         }
-
-    //         delete claimInfo[token];
-    //         token.safeTransfer(msg.sender, amount);
-
-    //         emit FundsClaimed({ by: msg.sender, token: token, amount: amount });
-    //     }
-    // }
-
     /// @notice Claims the amount in a given weeks
     /// @param claimWeeks The array of weeks for which you want to claim
     function claimAll(uint256[] calldata claimWeeks, IERC20[][] calldata tokens) external nonReentrant {
@@ -308,4 +268,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             }
         }
     }
+
+    // This function is executed when a contract receives plain Ether (without data)
+    receive() external payable {}
 }

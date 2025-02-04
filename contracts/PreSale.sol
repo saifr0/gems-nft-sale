@@ -22,12 +22,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using Address for address payable;
 
-    /// @dev To achieve return value of required decimals during calculation
-    uint256 private constant NORMALIZATION_FACTOR = 1e30;
-
-    /// @dev The constant value helps in calculating project amount
-    uint256 private constant PROJECT_PERCENTAGE_PPM = 630_000;
-
     /// @dev The constant value helps in calculating amount
     uint256 private constant CLAIMS_PERCENTAGE_PPM = 250_000;
 
@@ -35,19 +29,13 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
-
-    /// @dev The constant value helps in calculating platform amount
-    uint256 private constant PLATFORM_PERCENTAGE_PPM = 100_000;
-
-    /// @dev The constant value helps in calculating burn amount
-    uint256 private constant BURN_PERCENTAGE_PPM = 20_000;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_0e6;
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
     /// @notice The maximum amount of money a project hopes to raise in order to proceed with the project
-    uint256 public constant MAX_CAP = 40_000_000e6;
+    uint256 public constant MAX_CAP = 40_000_00e6;
 
     /// @notice The total usd raisedUsd
     uint256 public totalRaised;
@@ -79,15 +67,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the miner funds wallet
     address public minerFundsWallet;
 
-    /// @notice The address of the project wallet
-    address public projectWallet;
-
-    /// @notice The address of the platform wallet
-    address public platformWallet;
-
-    /// @notice The address of the burn wallet
-    address public burnWallet;
-
     /// @notice The price of the miner nft
     uint256 public nodeNFTPrice;
 
@@ -111,15 +90,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @dev Emitted when address of miner funds wallet is updated
     event MinerFundsWalletUpdated(address oldMinerFundsWallet, address newMinerFundsWallet);
-
-    /// @dev Emitted when address of platform wallet is updated
-    event PlatformWalletUpdated(address oldPlatformWallet, address newPlatformWallet);
-
-    /// @dev Emitted when address of project wallet is updated
-    event ProjectWalletUpdated(address oldProjectWallet, address newProjectWallet);
-
-    /// @dev Emitted when address of burn wallet is updated
-    event BurnWalletUpdated(address oldBurnWallet, address newBurnWallet);
 
     /// @dev Emitted when blacklist access of address is updated
     event BlacklistUpdated(address which, bool accessNow);
@@ -209,9 +179,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Constructor
     /// @param nodeFundsWalletAddress The address of node funds wallet
     /// @param minerFundsWalletAddress The address of miner funds wallet
-    /// @param projectWalletAddress The address of project wallet
-    /// @param platformWalletAddress The address of platform wallet
-    /// @param burnWalletAddress The address of burn wallet
     /// @param signerAddress The address of signer wallet
     /// @param owner The address of owner wallet
     /// @param claimsAddress The address of claim contract
@@ -224,9 +191,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     constructor(
         address nodeFundsWalletAddress,
         address minerFundsWalletAddress,
-        address projectWalletAddress,
-        address platformWalletAddress,
-        address burnWalletAddress,
         address signerAddress,
         address owner,
         IClaims claimsAddress,
@@ -240,9 +204,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         Ownable(owner)
         checkAddressZero(nodeFundsWalletAddress)
         checkAddressZero(minerFundsWalletAddress)
-        checkAddressZero(projectWalletAddress)
-        checkAddressZero(platformWalletAddress)
-        checkAddressZero(burnWalletAddress)
         checkAddressZero(signerAddress)
         checkAddressZero(address(claimsAddress))
         checkAddressZero(address(minerNftAddress))
@@ -261,9 +222,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         nodeFundsWallet = nodeFundsWalletAddress;
         minerFundsWallet = minerFundsWalletAddress;
-        projectWallet = projectWalletAddress;
-        platformWallet = platformWalletAddress;
-        burnWallet = burnWalletAddress;
         signerWallet = signerAddress;
         claimsContract = claimsAddress;
         minerNft = minerNftAddress;
@@ -594,48 +552,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         minerFundsWallet = newMinerFundsWallet;
     }
 
-    /// @notice Changes platform wallet address
-    /// @param newPlatformWallet The address of the new platform wallet
-    function updatePlatformWallet(address newPlatformWallet) external checkAddressZero(newPlatformWallet) onlyOwner {
-        address oldPlatformWallet = platformWallet;
-
-        if (oldPlatformWallet == newPlatformWallet) {
-            revert IdenticalValue();
-        }
-
-        emit PlatformWalletUpdated({ oldPlatformWallet: oldPlatformWallet, newPlatformWallet: newPlatformWallet });
-
-        platformWallet = newPlatformWallet;
-    }
-
-    /// @notice Changes project wallet address
-    /// @param newProjectWallet The address of the new project wallet
-    function updateProjectWallet(address newProjectWallet) external checkAddressZero(newProjectWallet) onlyOwner {
-        address oldProjectWallet = projectWallet;
-
-        if (oldProjectWallet == newProjectWallet) {
-            revert IdenticalValue();
-        }
-
-        emit ProjectWalletUpdated({ oldProjectWallet: oldProjectWallet, newProjectWallet: newProjectWallet });
-
-        projectWallet = newProjectWallet;
-    }
-
-    /// @notice Changes burn wallet address
-    /// @param newBurnWallet The address of the new burn wallet
-    function updateBurnWallet(address newBurnWallet) external checkAddressZero(newBurnWallet) onlyOwner {
-        address oldBurnWallet = burnWallet;
-
-        if (oldBurnWallet == newBurnWallet) {
-            revert IdenticalValue();
-        }
-
-        emit BurnWalletUpdated({ oldBurnWallet: oldBurnWallet, newBurnWallet: newBurnWallet });
-
-        burnWallet = newBurnWallet;
-    }
-
     /// @notice Changes the access of any address in contract interaction
     /// @param which The address for which access is updated
     /// @param access The access decision of `which` address
@@ -695,16 +611,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
             emit AllowedTokenUpdated({ token: token, status: status });
         }
-    }
-
-    /// @dev Calculates and transfers amount to wallets
-    function _calculateAndTransferAmounts(IERC20 token, uint256 amount) private {
-        _checkZeroValue(amount);
-        uint256 burnWalletAmount = (amount * BURN_PERCENTAGE_PPM) / PPM;
-        uint256 platformWalletAmount = (amount * PLATFORM_PERCENTAGE_PPM) / PPM;
-        token.safeTransferFrom(msg.sender, burnWallet, burnWalletAmount);
-        token.safeTransferFrom(msg.sender, platformWallet, platformWalletAmount);
-        token.safeTransferFrom(msg.sender, projectWallet, amount - (burnWalletAmount + platformWalletAmount));
     }
 
     /// @dev Checks value, if zero then reverts
