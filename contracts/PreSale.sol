@@ -404,7 +404,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external canBuy(token, deadline) nonReentrant {
+    ) external payable canBuy(token, deadline) nonReentrant {
         // The input must have been signed by the presale signer
         _verifySignature(
             keccak256(
