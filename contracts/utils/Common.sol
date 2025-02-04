@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /// @member latestPrice The price of token from price feed
 /// @member normalizationFactor The normalization factor to achieve return value of 18 decimals ,while calculating token purchases and always with different token decimals
 struct TokenInfo {
@@ -10,6 +12,9 @@ struct TokenInfo {
 
 /// @dev The constant value helps in calculating percentages
 uint256 constant PPM = 1_000_000;
+
+/// @dev The address of the Ethereum
+IERC20 constant ETH = IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
 /// @notice Thrown when updating an address with zero address
 error ZeroAddress();

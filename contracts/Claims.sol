@@ -2,16 +2,21 @@
 pragma solidity 0.8.25;
 
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { IClaims, ClaimInfo } from "./interfaces/IClaims.sol";
 
-import { InvalidData, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray } from "./utils/Common.sol";
+import { ETH, InvalidData, ArrayLengthMismatch, ZeroAddress, IdenticalValue, ZeroLengthArray } from "./utils/Common.sol";
 
 /// @title Claims contract
 /// @notice Implements the claiming of the leader's commissions
 contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
+    using Address for address payable;
+
+    /// @dev The constant value helps in calculating time
+    uint256 private constant ONE_WEEK_SECONDS = 604800;
 
     /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
     bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");
@@ -25,17 +30,24 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice The address of funds wallet
     address public fundsWallet;
 
+    /// @notice The current week number
+    uint256 public currentWeek;
+
     /// @notice Stores the claim amount of token in a round of the user
-    mapping(address => mapping(IERC20 => uint256)) public pendingClaims;
+    mapping(address leader => mapping(uint256 week => mapping(IERC20 token => uint256 commission)))
+        public pendingClaims;
+
+    /// @notice Stores the end time of the given week number
+    mapping(uint256 week => uint256 endTime) public endTimes;
 
     /// @notice Stores the enabled/disabled status of a round
     bool public isEnabled;
 
     /// @dev Emitted when claim amount is set for the addresses
-    event ClaimSet(address indexed to, ClaimInfo claimInfo);
+    event ClaimSet(address indexed to, uint256 indexed week, uint256 endTime, ClaimInfo claimInfo);
 
     /// @dev Emitted when claim amount is claimed
-    event FundsClaimed(address indexed by, IERC20 token, uint256 amount);
+    event FundsClaimed(address indexed by, IERC20 token, uint256 indexed week, uint256 amount);
 
     /// @dev Emitted when claim access changes for the round
     event ClaimsEnableUpdated(bool oldAccess, bool newAccess);
@@ -66,6 +78,8 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
         _setRoleAdmin(COMMISSIONS_MANAGER, ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, msg.sender);
+        currentWeek++;
+        endTimes[currentWeek] = block.timestamp + ONE_WEEK_SECONDS;
     }
 
     /// @inheritdoc IClaims
@@ -84,6 +98,17 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             revert ArrayLengthMismatch();
         }
 
+        uint256 prevEndTime = endTimes[currentWeek];
+
+        if (block.timestamp >= prevEndTime) {
+            uint256 weeksElapsed = ((block.timestamp - prevEndTime) / ONE_WEEK_SECONDS) + 1;
+
+            currentWeek += weeksElapsed;
+            endTimes[currentWeek] = prevEndTime + (weeksElapsed * ONE_WEEK_SECONDS);
+        }
+
+        uint256 week = currentWeek;
+
         for (uint256 i; i < toLength; ++i) {
             address leader = to[i];
 
@@ -91,12 +116,13 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 revert ZeroAddress();
             }
 
-            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader];
+            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
+
             ClaimInfo[] calldata toClaim = claims;
             ClaimInfo memory amount = toClaim[i];
             claimInfo[amount.token] += amount.amount;
 
-            emit ClaimSet({ to: leader, claimInfo: amount });
+            emit ClaimSet({ to: leader, week: week, endTime: endTimes[week], claimInfo: amount });
         }
     }
 
@@ -106,10 +132,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param amounts The revoke amount of each token of the leader
     function revokeLeaderClaim(
         address[] calldata leaders,
+        uint256 week,
         IERC20[][] calldata tokens,
         uint256[][] calldata amounts
     ) external onlyRole(ADMIN_ROLE) {
-        _updateOrRevokeClaim(leaders, tokens, amounts, true);
+        _updateOrRevokeClaim(leaders, tokens, amounts, week, true);
     }
 
     /// @notice Updates leader claim for the given token
@@ -118,10 +145,11 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @param amounts The revoke amount of each token of the leader
     function updateClaims(
         address[] calldata leaders,
+        uint256 week,
         IERC20[][] calldata tokens,
         uint256[][] calldata amounts
     ) external onlyRole(ADMIN_ROLE) {
-        _updateOrRevokeClaim(leaders, tokens, amounts, false);
+        _updateOrRevokeClaim(leaders, tokens, amounts, week, false);
     }
 
     /// @notice Updates presale contract address in claims
@@ -174,23 +202,60 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         isEnabled = status;
     }
 
-    /// @notice Claims the amount in a given round
-    function claim(IERC20[] calldata tokens) external nonReentrant {
-        mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender];
-        uint256 tokensLength = tokens.length;
+    // /// @notice Claims the amount in a given round
+    // function claim(IERC20[] calldata tokens) external nonReentrant {
+    //     mapping(IERC20 => uint256) storage claimInfo = pendingClaims[msg.sender];
+    //     uint256 tokensLength = tokens.length;
 
-        for (uint256 i; i < tokensLength; ++i) {
-            IERC20 token = tokens[i];
-            uint256 amount = claimInfo[token];
+    //     for (uint256 i; i < tokensLength; ++i) {
+    //         IERC20 token = tokens[i];
+    //         uint256 amount = claimInfo[token];
 
-            if (amount == 0) {
+    //         if (amount == 0) {
+    //             continue;
+    //         }
+
+    //         delete claimInfo[token];
+    //         token.safeTransfer(msg.sender, amount);
+
+    //         emit FundsClaimed({ by: msg.sender, token: token, amount: amount });
+    //     }
+    // }
+
+    /// @notice Claims the amount in a given weeks
+    /// @param claimWeeks The array of weeks for which you want to claim
+    function claimAll(uint256[] calldata claimWeeks, IERC20[][] calldata tokens) external nonReentrant {
+        uint256 weeksLength = claimWeeks.length;
+
+        if (weeksLength == 0 || weeksLength != tokens.length) {
+            revert InvalidData();
+        }
+
+        for (uint256 i; i < weeksLength; ++i) {
+            uint256 week = claimWeeks[i];
+
+            if (block.timestamp < endTimes[week]) {
                 continue;
             }
 
-            delete claimInfo[token];
-            token.safeTransfer(msg.sender, amount);
+            mapping(IERC20 => uint256) storage claims = pendingClaims[msg.sender][week];
 
-            emit FundsClaimed({ by: msg.sender, token: token, amount: amount });
+            IERC20[] calldata token = tokens[i];
+
+            for (uint256 j; j < token.length; ++j) {
+                IERC20 currentToken = token[i];
+                uint256 amount = claims[currentToken];
+
+                delete claims[currentToken];
+
+                if (currentToken == ETH) {
+                    payable(msg.sender).sendValue(amount);
+                } else {
+                    currentToken.safeTransfer(msg.sender, amount);
+                }
+
+                emit FundsClaimed({ by: msg.sender, token: currentToken, week: week, amount: amount });
+            }
         }
     }
 
@@ -203,6 +268,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         address[] calldata leaders,
         IERC20[][] calldata tokens,
         uint256[][] calldata amounts,
+        uint256 week,
         bool isRevoke
     ) private {
         uint256 leadersLength = leaders.length;
@@ -224,7 +290,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 revert ArrayLengthMismatch();
             }
 
-            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader];
+            mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
 
             for (uint256 j; j < leaderTokens.length; ++j) {
                 IERC20 token = leaderTokens[j];
