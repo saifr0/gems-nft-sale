@@ -16,7 +16,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using Address for address payable;
 
     /// @dev The constant value helps in calculating time
-    uint256 private constant ONE_WEEK_SECONDS = 600;
+    uint256 private constant ONE_WEEK_SECONDS = 604800;
 
     /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
     bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");

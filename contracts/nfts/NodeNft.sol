@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import { ERC721A } from "erc721a/contracts/ERC721A.sol";
+import { ERC721A } from "node_modules/erc721a/contracts/ERC721A.sol";
 import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import { ZeroAddress, IdenticalValue } from "../utils/Common.sol";
