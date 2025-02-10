@@ -206,7 +206,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 IERC20 currentToken = token[i];
                 uint256 amount = claims[currentToken];
 
-                if (amount > 0) {
+                if (amount == 0) {
                     continue;
                 }
 

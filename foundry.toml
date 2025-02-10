@@ -11,6 +11,7 @@ via_ir = true
 
 remappings = [
     "@openzeppelin/=node_modules/@openzeppelin/",
+     "erc721a/=node_modules/erc721a/",
     "@uniswap/=node_modules/@uniswap/",
     "@chainlink/=node_modules/@chainlink/",
     "forge-std/=lib/forge-std/src/"
