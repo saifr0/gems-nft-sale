@@ -63,7 +63,8 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
     /// @dev Constructor
     /// @param fundsWalletAddress The address of funds Wallet
-    constructor(address fundsWalletAddress) {
+    /// @param lastWeek The last week number
+    constructor(address fundsWalletAddress, uint256 lastWeek) {
         if (fundsWalletAddress == address(0)) {
             revert ZeroAddress();
         }
@@ -72,7 +73,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
         _setRoleAdmin(COMMISSIONS_MANAGER, ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, msg.sender);
-        currentWeek++;
+        currentWeek += lastWeek;
         endTimes[currentWeek] = block.timestamp + ONE_WEEK_SECONDS;
     }
 
