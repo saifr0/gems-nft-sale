@@ -288,7 +288,7 @@ contract PreSaleTest is Test {
 
         //miner buying
         vm.startPrank(user);
-        preSale.purchaseMinerNFT{ value: 1 ether }(ETH, price, deadline, quantities, nf, v, r, s);
+        preSale.purchaseMinerNFT{ value: 0.1 ether }(ETH, price, deadline, quantities, nf, v, r, s);
         vm.stopPrank();
 
         //miner and user walllet balance assertion
@@ -500,7 +500,8 @@ contract PreSaleTest is Test {
             expectedPendingClaims = (prices * percentages[i]) / PPM;
             expectedTotalPercentage += percentages[i];
             assertEq(
-                claimsContract.pendingClaims(leaders[i], 1, IERC20(ETH)) - previousLeaderClaims[i],
+                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(ETH)) -
+                    previousLeaderClaims[i],
                 expectedPendingClaims,
                 "leader fund amount "
             );
@@ -599,7 +600,8 @@ contract PreSaleTest is Test {
             expectedPendingClaims = (prices * percentages[i]) / PPM;
             expectedTotalPercentage += percentages[i];
             assertEq(
-                claimsContract.pendingClaims(leaders[i], 1, IERC20(USDT)) - previousLeaderClaims[i],
+                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
+                    previousLeaderClaims[i],
                 expectedPendingClaims,
                 "leader fund amount "
             );
@@ -695,12 +697,158 @@ contract PreSaleTest is Test {
             expectedPendingClaims = (prices * percentages[i]) / PPM;
             expectedTotalPercentage += percentages[i];
             assertEq(
-                claimsContract.pendingClaims(leaders[i], 1, IERC20(GEMS)) - previousLeaderClaims[i],
+                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(GEMS)),
                 expectedPendingClaims,
                 "leader fund amount "
             );
         }
         assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
+
+        //user nft balance assertions
+        for (uint256 i; i < quantityLength; ++i) {
+            uint256 quantity = quantities[i];
+            if (quantity > 0) {
+                uint256 tokenId = i;
+                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+
+                assertEq(userBalance, quantity, "user Nfts");
+            }
+        }
+    }
+
+    function testLeaderClaims() external {
+        uint256 expectedMinerWalletFunds;
+        uint256 expectedClaimsFunds;
+        uint256 expectedPendingClaims;
+        uint256 expectedTotalPercentage;
+        uint256 expectedPendingRevokedClaims;
+        uint256 expectedPendingUpdatedClaims;
+        uint256 prices;
+
+        uint256 deadline = block.timestamp;
+        uint256 DISCOUNT_PERCENTAGE_PPM = 500_000;
+        uint256 price = 0;
+        uint8 nf = 0;
+
+        //sign
+        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(price, nf, USDT, deadline);
+
+        uint256 leaderPercentageAmount = (percentages[0]) +
+            (percentages[1]) +
+            (percentages[2]) +
+            (percentages[3]) +
+            (percentages[4]);
+
+        //leaders previous claims
+        uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
+
+        //previous claims funds
+        uint256 prevClaimsFunds = USDT.balanceOf(address(claimsContract));
+        for (uint256 i = 0; i < leaders.length; ++i) {
+            previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(USDT));
+        }
+
+        //getting USDT latest price and normalization factor
+        uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
+        uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
+
+        //calaculating nft purchasing amount
+        uint256[3] memory quantities = [uint(1), uint(1), uint(1)];
+        uint256[3] memory minerPrices = minerNFTPrices;
+        uint256 quantityLength = quantities.length;
+
+        for (uint256 i; i < quantityLength; ++i) {
+            uint256 quantity = quantities[i];
+
+            if (quantity > 0) {
+                prices += (minerPrices[i] * quantity);
+            }
+        }
+
+        prices = (((prices * (10 ** nfUSDT)) / latestPriceUSDT) * DISCOUNT_PERCENTAGE_PPM) / PPM;
+
+        //calculating leader claims and funds wallet amount
+        uint256 sumPercentage;
+        uint256 remainingPercentageAmount;
+        for (uint256 j; j < percentages.length; ++j) {
+            sumPercentage += percentages[j];
+
+            expectedClaimsFunds = (prices * 250_000) / PPM;
+            uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
+
+            if (sumPercentage < 250_000) {
+                remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
+            }
+
+            expectedClaimsFunds -= remainingPercentageAmount;
+            expectedMinerWalletFunds = prices - expectedClaimsFunds;
+        }
+
+        //miner discounted buying
+        vm.startPrank(user);
+        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+        preSale.purchaseMinerNFTDiscount(USDT, price, deadline, quantities, percentages, leaders, nf, code, v, r, s);
+        vm.stopPrank();
+
+        //assertions
+        assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+        assertEq(USDT.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
+
+        address[] memory revokeLeader = new address[](1);
+        revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
+
+        IERC20[][] memory revokeToken = new IERC20[][](1);
+        IERC20[] memory revokeTokens = new IERC20[](1);
+        revokeTokens[0] = USDT;
+        revokeToken[0] = revokeTokens;
+
+        uint256[][] memory revokeAmount = new uint256[][](1);
+        uint256[] memory revokeAmounts = new uint256[](1);
+        revokeAmounts[0] = 1000000;
+        revokeAmount[0] = revokeAmounts;
+
+        uint256[] memory week = new uint256[](1);
+        week[0] = 1;
+
+        // //revoking leader  claims
+        claimsContract.revokeLeaderClaim(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
+        expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
+        assertEq(
+            claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
+            expectedPendingRevokedClaims,
+            "leader Revoked claim funds "
+        );
+
+        //update leader claims
+        claimsContract.updateClaims(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
+        expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
+        assertEq(
+            claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
+            expectedPendingUpdatedClaims,
+            "leader Updated claim funds "
+        );
+
+        vm.warp(block.timestamp + 8 days);
+        for (uint256 i = 1; i < leaders.length; ++i) {
+            expectedPendingClaims = (prices * percentages[i]) / PPM;
+            expectedTotalPercentage += percentages[i];
+            assertEq(
+                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
+                    previousLeaderClaims[i],
+                expectedPendingClaims,
+                "leader fund amount "
+            );
+
+            vm.startPrank(leaders[i]);
+            claimsContract.claimAll(week, revokeToken);
+            vm.stopPrank();
+
+            assertTrue(
+                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) == 0,
+                "leader amount claimed"
+            );
+        }
+        assertEq(expectedTotalPercentage + percentages[0], leaderPercentageAmount, "leader percentage contract");
 
         //user nft balance assertions
         for (uint256 i; i < quantityLength; ++i) {
