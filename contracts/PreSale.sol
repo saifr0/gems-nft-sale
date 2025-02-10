@@ -29,13 +29,13 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_0e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
     /// @notice The maximum amount of money project hopes to raise
-    uint256 public constant MAX_CAP = 40_000_00e6;
+    uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
