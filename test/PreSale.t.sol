@@ -1027,6 +1027,7 @@ contract PreSaleTest is Test {
             r,
             s
         );
+
         vm.stopPrank();
 
         vm.warp(block.timestamp + 8 days);
@@ -1153,17 +1154,6 @@ contract PreSaleTest is Test {
             // );
         }
         // assertEq(expectedTotalPercentage + percentages[0], leaderPercentageAmount, "leader percentage contract");
-
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
-
-                // assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
     }
 
     function _validateSignWithToken(
