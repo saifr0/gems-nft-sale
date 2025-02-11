@@ -201,7 +201,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             IERC20[] calldata token = tokens[i];
 
             for (uint256 j; j < token.length; ++j) {
-                IERC20 currentToken = token[i];
+                IERC20 currentToken = token[j];
                 uint256 amount = claims[currentToken];
 
                 if (amount == 0) {
