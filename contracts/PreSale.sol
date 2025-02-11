@@ -132,7 +132,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         string code,
         uint256 amountPurchased,
         address[] leaders,
-        uint256[] percentages
+        uint256[] percentages,
+        uint256 discountPercentage
     );
 
     /// @notice Thrown when address is blacklisted
@@ -161,6 +162,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when token is not allowed to use for purchases
     error TokenNotAllowed();
+
+    /// @notice Thrown when discount percentage is invalid
+    error InvalidDiscount();
 
     /// @dev Restricts when updating wallet/contract address with zero address
     modifier checkAddressZero(address which) {
@@ -319,9 +323,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(
             token,
             referenceTokenPrice,
+            0,
             quantities,
-            referenceNormalizationFactor,
-            false
+            referenceNormalizationFactor
         );
 
         if (token == ETH) {
@@ -348,6 +352,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param token The token used in the purchase
     /// @param referenceTokenPrice The current price of token in 10 decimals
     /// @param deadline The deadline is validity of the signature
+    /// @param discountPercentagePPM The discount percentage, applied to purchase
     /// @param quantities The amount of each miner that you want to purchase
     /// @param percentages The leader's percentages
     /// @param leaders The addresses of the leaders
@@ -360,6 +365,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         IERC20 token,
         uint256 referenceTokenPrice,
         uint256 deadline,
+        uint256 discountPercentagePPM,
         uint256[3] calldata quantities,
         uint256[] calldata percentages,
         address[] calldata leaders,
@@ -377,6 +383,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
                     code,
                     percentages,
                     leaders,
+                    discountPercentagePPM,
                     referenceNormalizationFactor,
                     referenceTokenPrice,
                     deadline,
@@ -393,9 +400,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(
             token,
             referenceTokenPrice,
+            discountPercentagePPM,
             quantities,
-            referenceNormalizationFactor,
-            true
+            referenceNormalizationFactor
         );
 
         _transferAndUpdateCommissions(token, purchaseAmount, leaders, percentages);
@@ -409,7 +416,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             code: code,
             amountPurchased: purchaseAmount,
             leaders: leaders,
-            percentages: percentages
+            percentages: percentages,
+            discountPercentage: discountPercentagePPM
         });
     }
 
@@ -417,9 +425,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     function _processPurchase(
         IERC20 token,
         uint256 referenceTokenPrice,
+        uint256 discountPercentagePPM,
         uint256[3] calldata quantities,
-        uint8 referenceNormalizationFactor,
-        bool isDiscounted
+        uint8 referenceNormalizationFactor
     ) private returns (uint256, uint256) {
         (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(
             token,
@@ -442,8 +450,12 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         _checkZeroValue(prices);
 
-        if (isDiscounted) {
-            prices = (prices * DISCOUNT_PERCENTAGE_PPM) / PPM;
+        if (discountPercentagePPM != 0) {
+            if (discountPercentagePPM > DISCOUNT_PERCENTAGE_PPM) {
+                revert InvalidDiscount();
+            }
+
+            prices -= (prices * discountPercentagePPM) / PPM;
         }
 
         totalRaised += prices;
