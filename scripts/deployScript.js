@@ -25,11 +25,12 @@ async function main() {
     const minerNftContractAddress = '';
     const nodeNftContractAddress = '';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
-    const priceAccretionPercentagePPMInit = '25000';
+    const priceAccretionPercentagePPMInit = '20000';
     const nodesNFTPriceInit = '99000000';
     const minersNFTPriceInit = ['199000000', '3999000000', '19999000000'];
     const minerNFTUri = 'ipfs://bafybeia6j3ywueosrlkar25wms2vcidsuv4myaz5c2is63vl3lbvjik5xy/';
     const nodeNFTUri = 'ipfs://bafkreihq7snmnquzs3n6jcrt4k7indhfw7wd57atulee7y2wxbwqxytaga';
+    const lastWeek = 0;
 
     // -------------------------------- TokenRegistry------------------------------------------ //
     //*this is simple token registry deployment script, not the upgradable
@@ -48,30 +49,30 @@ async function main() {
 
     //------------------------------- MinerNFT------------------------------------------ //
 
-    // const MinerNFT = await hre.ethers.deployContract('MinerNft', [owner, minerNFTUri]);
-    // console.log('Deploying MinerNFT...');
-    // await MinerNFT.waitForDeployment();
-    // console.log('MinerNFT deployed to -------', MinerNFT.target);
-    // await new Promise((resolve) => setTimeout(resolve, 15000));
-    // verify(MinerNFT.target, [owner, minerNFTUri]);
-    // console.log('MinerNFT Verified');
+    const MinerNFT = await hre.ethers.deployContract('MinerNft', [owner, minerNFTUri]);
+    console.log('Deploying MinerNFT...');
+    await MinerNFT.waitForDeployment();
+    console.log('MinerNFT deployed to -------', MinerNFT.target);
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    verify(MinerNFT.target, [owner, minerNFTUri]);
+    console.log('MinerNFT Verified');
 
     // // // -------------------------------- NodeNft------------------------------------------ //
-    // const NodeNft = await hre.ethers.deployContract('NodeNft', [owner, nodeNFTUri]);
-    // console.log('Deploying NodeNft...');
-    // await NodeNft.waitForDeployment();
-    // console.log('NodeNft deployed to---------', NodeNft.target);
-    // await new Promise((resolve) => setTimeout(resolve, 15000));
-    // verify(NodeNft.target, [owner, nodeNFTUri]);
-    // console.log('NodeNft Verified');
+    const NodeNft = await hre.ethers.deployContract('NodeNft', [owner, nodeNFTUri]);
+    console.log('Deploying NodeNft...');
+    await NodeNft.waitForDeployment();
+    console.log('NodeNft deployed to---------', NodeNft.target);
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    verify(NodeNft.target, [owner, nodeNFTUri]);
+    console.log('NodeNft Verified');
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    const Claims = await hre.ethers.deployContract('Claims', [owner]);
+    const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek]);
     console.log('Deploying Claims...');
     await Claims.waitForDeployment();
     console.log('Claims deployed to---------', Claims.target);
     await new Promise((resolve) => setTimeout(resolve, 20000));
-    verify(Claims.target, [owner]);
+    verify(Claims.target, [owner, lastWeek]);
     console.log('Claims Verified');
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
@@ -82,8 +83,8 @@ async function main() {
         signerAddress,
         owner,
         Claims.target,
-        '0x1caC19c7497820D7b99fF51Cf49804424fa90adA',
-        '0xDda1964E3aFbae54180DcF635f4ba3bB2311e272',
+        MinerNFT.target,
+        NodeNft.target,
         tokenRegistryAddress,
         nodesNFTPriceInit,
         priceAccretionPercentagePPMInit,
@@ -104,8 +105,8 @@ async function main() {
         signerAddress,
         owner,
         Claims.target,
-        '0x1caC19c7497820D7b99fF51Cf49804424fa90adA',
-        '0xDda1964E3aFbae54180DcF635f4ba3bB2311e272',
+        MinerNFT.target,
+        NodeNft.target,
         tokenRegistryAddress,
         nodesNFTPriceInit,
         priceAccretionPercentagePPMInit,
@@ -120,10 +121,10 @@ async function main() {
 
     return;
 
-    // MinerNFT deployed to ------- 0x1caC19c7497820D7b99fF51Cf49804424fa90adA
-    // NodeNft deployed to  ------- 0xDda1964E3aFbae54180DcF635f4ba3bB2311e272
-    // Claims deployed to   ------  0x3663F4a99be3D6740eFec14BdA4ce957a5c209f3
-    // PreSale deployed to-------- 0x904d96DB6f2712E0573264c05316AFd6933D5C1E
+    // MinerNFT deployed to ------- 0x2D3B57cDF8b369D1D068410a646B958bFd0307b4
+    // NodeNft deployed to  ------- 0x22CCE3574fDf658B4E2d0878160aC4Df8225bB2D
+    // Claims deployed to   ------  0xC289Bac6D0aFeAa4f08EBa0a5A59C2b937D0d872
+    // PreSale deployed to ------- 0xcB870b17Abf9C0CF10d15f34B5A2aBFBF33d0F5E
 
     // let claims = await hre.ethers.getContractAt('Claims', Claims.target);
     // await claims.updatePresaleAddress(PreSale.target);
