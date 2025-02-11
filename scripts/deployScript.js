@@ -72,7 +72,7 @@ async function main() {
     await Claims.waitForDeployment();
     console.log('Claims deployed to---------', Claims.target);
     await new Promise((resolve) => setTimeout(resolve, 20000));
-    verify(Claims.target, [owner, lastWeek]);
+    verify(Claims.target, [owner]);
     console.log('Claims Verified');
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
