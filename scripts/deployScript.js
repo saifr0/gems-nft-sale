@@ -66,12 +66,12 @@ async function main() {
     // console.log('NodeNft Verified');
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    const Claims = await hre.ethers.deployContract('Claims', [owner]);
+    const Claims = await hre.ethers.deployContract('Claims', [owner, 1]);
     console.log('Deploying Claims...');
     await Claims.waitForDeployment();
     console.log('Claims deployed to---------', Claims.target);
     await new Promise((resolve) => setTimeout(resolve, 20000));
-    verify(Claims.target, [owner]);
+    verify(Claims.target, [owner, 1]);
     console.log('Claims Verified');
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
@@ -82,8 +82,8 @@ async function main() {
         signerAddress,
         owner,
         Claims.target,
-        '0x1caC19c7497820D7b99fF51Cf49804424fa90adA',
-        '0xDda1964E3aFbae54180DcF635f4ba3bB2311e272',
+        '0x2D3B57cDF8b369D1D068410a646B958bFd0307b4',
+        '0x22CCE3574fDf658B4E2d0878160aC4Df8225bB2D',
         tokenRegistryAddress,
         nodesNFTPriceInit,
         priceAccretionPercentagePPMInit,
@@ -104,8 +104,8 @@ async function main() {
         signerAddress,
         owner,
         Claims.target,
-        '0x1caC19c7497820D7b99fF51Cf49804424fa90adA',
-        '0xDda1964E3aFbae54180DcF635f4ba3bB2311e272',
+        '0x2D3B57cDF8b369D1D068410a646B958bFd0307b4',
+        '0x22CCE3574fDf658B4E2d0878160aC4Df8225bB2D',
         tokenRegistryAddress,
         nodesNFTPriceInit,
         priceAccretionPercentagePPMInit,
