@@ -16,13 +16,13 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using Address for address payable;
 
     /// @dev The constant value helps in calculating time
-    uint256 private constant ONE_WEEK_SECONDS = 604800;
+    uint256 private constant ONE_WEEK_SECONDS = 604_800;
 
-    /// @notice Returns the identifier of the COMMISSIONS_MANAGER role
-    bytes32 public constant COMMISSIONS_MANAGER = keccak256("COMMISSIONS_MANAGER");
+    /// NOTE: keccak256("COMMISSIONS_MANAGER")
+    bytes32 public constant COMMISSIONS_MANAGER = 0x28d695c7dfc0dc20c36b38cc22e861d8a3c0da73ef3975e85a4bf12193642a5c;
 
-    /// @notice Returns the identifier of the ADMIN_ROLE role
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN");
+    /// NOTE: keccak256("ADMIN")
+    bytes32 public constant ADMIN_ROLE = 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42;
 
     /// @notice Returns the address of the presale contract
     address public presale;
@@ -112,12 +112,9 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
             }
 
             mapping(IERC20 => uint256) storage claimInfo = pendingClaims[leader][week];
+            claimInfo[claims[i].token] += claims[i].amount;
 
-            ClaimInfo[] calldata toClaim = claims;
-            ClaimInfo memory amount = toClaim[i];
-            claimInfo[amount.token] += amount.amount;
-
-            emit ClaimSet({ to: leader, week: week, endTime: endTimes[week], claimInfo: amount });
+            emit ClaimSet({ to: leader, week: week, endTime: endTimes[week], claimInfo: claims[i] });
         }
     }
 

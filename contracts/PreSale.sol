@@ -647,7 +647,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
                 revert CodeSyncIssue();
             }
         }
-        //  If price feed isn't available,we fallback to the reference price
+        //  If price feed isn't available, we fallback to the reference price
         if (tokenInfo.latestPrice == 0) {
             if (referenceTokenPrice == 0 || referenceNormalizationFactor == 0) {
                 revert ZeroValue();
@@ -695,7 +695,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[] calldata percentages
     ) private {
         uint256 toLength = leaders.length;
-        uint256 sumPercentage;
 
         if (toLength == 0) {
             revert InvalidData();
@@ -711,6 +710,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
 
+        uint256 sumPercentage;
         for (uint256 i; i < toLength; ++i) {
             uint256 percentage = percentages[i];
             sumPercentage += percentage;
@@ -726,12 +726,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         }
 
         uint256 equivalence = (amount * sumPercentage) / PPM;
-
-        if (sumPercentage < CLAIMS_PERCENTAGE_PPM) {
-            amount -= equivalence;
-        } else {
-            amount -= (amount * CLAIMS_PERCENTAGE_PPM) / PPM;
-        }
+        amount -= equivalence;
 
         if (token == ETH) {
             payable(minerFundsWallet).sendValue(amount);
