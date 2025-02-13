@@ -21,7 +21,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// NOTE: keccak256("COMMISSIONS_MANAGER")
     bytes32 public constant COMMISSIONS_MANAGER = 0x28d695c7dfc0dc20c36b38cc22e861d8a3c0da73ef3975e85a4bf12193642a5c;
 
-    /// NOTE: keccak256("ADMIN")
+    /// @dev keccak256("ADMIN")
     bytes32 public constant ADMIN_ROLE = 0xdf8b4c520ffe197c5343c6f5aec59570151ef9a492f2c624fd45ddde6135ec42;
 
     /// @notice Returns the address of the presale contract
@@ -33,7 +33,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @notice The current week number
     uint256 public currentWeek;
 
-    /// @notice Stores the claim amount of token in a round of the user
+    /// @notice Stores the claim amount of token in a week of the user
     mapping(address leader => mapping(uint256 week => mapping(IERC20 token => uint256 commission)))
         public pendingClaims;
 
@@ -64,7 +64,8 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     /// @dev Constructor
     /// @param fundsWalletAddress The address of funds Wallet
     /// @param lastWeek The last week number
-    constructor(address fundsWalletAddress, uint256 lastWeek) {
+    /// @param lastWeekEndTime The last week end time
+    constructor(address fundsWalletAddress, uint256 lastWeek, uint256 lastWeekEndTime) {
         if (fundsWalletAddress == address(0)) {
             revert ZeroAddress();
         }
@@ -73,8 +74,8 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
         _setRoleAdmin(COMMISSIONS_MANAGER, ADMIN_ROLE);
         _grantRole(ADMIN_ROLE, msg.sender);
-        currentWeek += lastWeek;
-        endTimes[currentWeek] = block.timestamp + ONE_WEEK_SECONDS;
+        currentWeek = lastWeek;
+        endTimes[lastWeek] = lastWeekEndTime;
     }
 
     /// @inheritdoc IClaims
@@ -182,6 +183,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
 
     /// @notice Claims the amount in a given weeks
     /// @param claimWeeks The array of weeks for which you want to claim
+    /// @param tokens Tokens used for buying in each week
     function claimAll(uint256[] calldata claimWeeks, IERC20[][] calldata tokens) external nonReentrant {
         uint256 weeksLength = claimWeeks.length;
 

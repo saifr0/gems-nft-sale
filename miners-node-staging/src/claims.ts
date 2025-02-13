@@ -19,6 +19,7 @@ import {
   RoleAdminChanged,
   RoleGranted,
   RoleRevoked,
+  LeaderToToken
 } from "../generated/schema"
 
 export function handleClaimRevoked(event: ClaimRevokedEvent): void {
@@ -51,6 +52,18 @@ export function handleClaimSet(event: ClaimSetEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
+
+  let id = event.params.to.toHexString().concat(event.params.week.toString()).concat(event.params.claimInfo.token.toHexString())
+  let loadEntity = LeaderToToken.load(id)
+
+  if (!loadEntity) {
+    let ne = new LeaderToToken(id);
+    ne.leader = event.params.to
+    ne.token = event.params.claimInfo.token
+    ne.week = event.params.week
+    ne.save();
+  }
+
 }
 
 export function handleClaimsUpdated(event: ClaimsUpdatedEvent): void {

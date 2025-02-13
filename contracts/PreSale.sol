@@ -22,20 +22,20 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using Address for address payable;
 
-    /// @dev The constant percentage of the leader's commissions
+    /// @dev The maximum percentage of the leader's commissions
     uint256 private constant CLAIMS_PERCENTAGE_PPM = 250_000;
 
-    /// @dev The constant discount percentage, applied to those purchasing with leader's code
+    /// @dev The maximum discount percentage, applied to those purchasing with leader's code
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_0e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
     /// @notice The maximum amount of money project hopes to raise
-    uint256 public constant MAX_CAP = 40_000_0e6;
+    uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
@@ -188,6 +188,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param nodeNftAddress The address of node nft contract
     /// @param tokenRegistryAddress The address of token registry contract
     /// @param nodeNftPriceInit The price of node nft
+    /// @param prevAccretionThreshold The previous raised amount to check price accretion
+    /// @param prevTotalRaised The previous raised amount
     /// @param priceAccretionPercentagePPMInit The price accretion percentage value, it can be zero
     /// @param minerNftPricesInit The prices of miner nfts
     constructor(
@@ -200,6 +202,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         INodeNft nodeNftAddress,
         ITokenRegistry tokenRegistryAddress,
         uint256 nodeNftPriceInit,
+        uint256 prevAccretionThreshold,
+        uint256 prevTotalRaised,
         uint256 priceAccretionPercentagePPMInit,
         uint256[3] memory minerNftPricesInit
     )
@@ -232,6 +236,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         nodeNFTPrice = nodeNftPriceInit;
         priceAccretionPercentagePPM = priceAccretionPercentagePPMInit;
         minerNFTPrices = minerNftPricesInit;
+        accretionThreshold = prevAccretionThreshold;
+        totalRaised = prevTotalRaised;
     }
 
     /// @notice Purchases node with any token
