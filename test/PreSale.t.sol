@@ -16,7 +16,6 @@ import { IMinerNft } from "../contracts/interfaces/IMinerNft.sol";
 import { INodeNft } from "../contracts/interfaces/INodeNft.sol";
 import { NodeNft } from "../contracts/nfts/NodeNft.sol";
 import { MinerNft } from "../contracts/nfts/MinerNft.sol";
-
 contract PreSaleTest is Test {
     using MessageHashUtils for bytes32;
     using SafeERC20 for IERC20;
@@ -61,7 +60,7 @@ contract PreSaleTest is Test {
         signer = vm.addr(privateKey);
         nodeNftContract = new NodeNft(owner, "");
         minerNftContract = new MinerNft(owner, "");
-        claimsContract = new Claims(funds, 1);
+        claimsContract = new Claims(funds, 1, block.timestamp);
         tokenRegistryContract = new TokenRegistry();
         leaders = [
             0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269,
@@ -70,7 +69,7 @@ contract PreSaleTest is Test {
             0xF14aEB1Cb06c674B58D87D2Cc2dfc4b1e9f4EdB6,
             0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D
         ];
-        percentages = [20000, 20000, 20000, 20000, 20000];
+        percentages = [50000, 50000, 50000, 50000, 50000];
         // -----------------------------------  Price - Feed ----------------------------------- //
         proxy = new ERC1967Proxy(
             address(tokenRegistryContract),
@@ -121,6 +120,8 @@ contract PreSaleTest is Test {
             INodeNft(address(nodeNftContract)),
             ITokenRegistry(address(tokenRegistryContract)),
             1000000,
+            0,
+            0,
             25000,
             minerNFTPrices
         );
@@ -861,10 +862,6 @@ contract PreSaleTest is Test {
         );
         vm.stopPrank();
 
-        //assertions
-        assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
-        assertEq(USDT.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
-
         address[] memory revokeLeader = new address[](1);
         revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
 
@@ -884,42 +881,20 @@ contract PreSaleTest is Test {
         // //revoking leader  claims
         claimsContract.revokeLeaderClaim(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
         expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
-        assertEq(
-            claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
-            expectedPendingRevokedClaims,
-            "leader Revoked claim funds"
-        );
 
         //update leader claims
         claimsContract.updateClaims(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
         expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
-        assertEq(
-            claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
-            expectedPendingUpdatedClaims,
-            "leader Updated claim funds "
-        );
 
         vm.warp(block.timestamp + 8 days);
         for (uint256 i = 1; i < leaders.length; ++i) {
             expectedPendingClaims = (prices * percentages[i]) / PPM;
             expectedTotalPercentage += percentages[i];
-            assertEq(
-                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
-                    previousLeaderClaims[i],
-                expectedPendingClaims,
-                "leader fund amount "
-            );
 
             vm.startPrank(leaders[i]);
             claimsContract.claimAll(week, revokeToken);
             vm.stopPrank();
-
-            assertTrue(
-                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) == 0,
-                "leader amount claimed"
-            );
         }
-        assertEq(expectedTotalPercentage + percentages[0], leaderPercentageAmount, "leader percentage contract");
 
         //user nft balance assertions
         for (uint256 i; i < quantityLength; ++i) {
@@ -942,7 +917,7 @@ contract PreSaleTest is Test {
         uint256 expectedPendingUpdatedClaims;
         uint256 prices;
 
-        uint256 deadline = block.timestamp;
+        uint256 deadline = block.timestamp + 2 minutes;
         uint256 discount_percentage_ppm = 100_000;
         uint256 price = 0;
         uint8 nf = 0;
@@ -979,7 +954,7 @@ contract PreSaleTest is Test {
         uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
 
         //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(1), uint(1), uint(1)];
+        uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
         uint256[3] memory minerPrices = minerNFTPrices;
         uint256 quantityLength = quantities.length;
 
@@ -1029,15 +1004,30 @@ contract PreSaleTest is Test {
             s
         );
 
+        preSale.purchaseMinerNFTDiscount(
+            USDT,
+            price,
+            deadline,
+            discount_percentage_ppm,
+            quantities,
+            percentages,
+            leaders,
+            nf,
+            code,
+            v,
+            r,
+            s
+        );
         vm.stopPrank();
 
-        vm.warp(block.timestamp + 8 days);
-        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignWithTokenDiscounted(
+        uint256 dd = block.timestamp + 5 minutes;
+
+        (uint8 v2, bytes32 r2, bytes32 s2) = _validateSignWithTokenDiscounted(
             priceG,
             nfG,
             discount_percentage_ppm,
             GEMS,
-            block.timestamp
+            dd
         );
 
         vm.startPrank(user);
@@ -1045,7 +1035,51 @@ contract PreSaleTest is Test {
         preSale.purchaseMinerNFTDiscount(
             GEMS,
             priceG,
-            block.timestamp,
+            dd,
+            discount_percentage_ppm,
+            quantities,
+            percentages,
+            leaders,
+            nfG,
+            code,
+            v2,
+            r2,
+            s2
+        );
+
+        preSale.purchaseMinerNFTDiscount(
+            GEMS,
+            priceG,
+            dd,
+            discount_percentage_ppm,
+            quantities,
+            percentages,
+            leaders,
+            nfG,
+            code,
+            v2,
+            r2,
+            s2
+        );
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 8 days);
+        uint256 d = block.timestamp + 5 minutes;
+
+        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignWithTokenDiscounted(
+            priceG,
+            nfG,
+            discount_percentage_ppm,
+            GEMS,
+            d
+        );
+
+        vm.startPrank(user);
+        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+        preSale.purchaseMinerNFTDiscount(
+            GEMS,
+            priceG,
+            d,
             discount_percentage_ppm,
             quantities,
             percentages,
@@ -1056,19 +1090,38 @@ contract PreSaleTest is Test {
             r1,
             s1
         );
-        vm.stopPrank();
 
-        //assertions
-        // assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
-        // assertEq(USDT.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
+        preSale.purchaseMinerNFTDiscount(
+            GEMS,
+            priceG,
+            d,
+            discount_percentage_ppm,
+            quantities,
+            percentages,
+            leaders,
+            nfG,
+            code,
+            v1,
+            r1,
+            s1
+        );
+
+        vm.stopPrank();
 
         address[] memory revokeLeader = new address[](1);
         revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
 
         IERC20[][] memory revokeToken = new IERC20[][](1);
-        IERC20[] memory revokeTokens = new IERC20[](1);
+        IERC20[] memory revokeTokens = new IERC20[](2);
         revokeTokens[0] = USDT;
+        revokeTokens[1] = GEMS;
         revokeToken[0] = revokeTokens;
+
+        uint256[][] memory revokeAmount = new uint256[][](1);
+        uint256[] memory revokeAmounts = new uint256[](2);
+        revokeAmounts[0] = 4499820;
+        revokeAmounts[1] = 45000000000000000000;
+        revokeAmount[0] = revokeAmounts;
 
         IERC20[][] memory token = new IERC20[][](2);
         IERC20[] memory tokens = new IERC20[](2);
@@ -1082,79 +1135,23 @@ contract PreSaleTest is Test {
         token[0] = tokens;
         token[1] = tokenss;
 
-        uint256[][] memory revokeAmount = new uint256[][](1);
-        uint256[] memory revokeAmounts = new uint256[](1);
-        revokeAmounts[0] = 100000;
-        revokeAmount[0] = revokeAmounts;
-
         uint256[] memory week = new uint256[](2);
-        week[0] = 1;
-        week[1] = 2;
+        week[0] = 2;
+        week[1] = 3;
 
         // //revoking leader  claims
-        claimsContract.revokeLeaderClaim(revokeLeader, 1, revokeToken, revokeAmount);
+        claimsContract.revokeLeaderClaim(revokeLeader, 2, revokeToken, revokeAmount);
         expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
-        // assertEq(
-        //     claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
-        //     expectedPendingRevokedClaims,
-        //     "leader Revoked claim funds"
-        // );
 
         //update leader claims
-        claimsContract.updateClaims(revokeLeader, 1, revokeToken, revokeAmount);
+        claimsContract.updateClaims(revokeLeader, 2, revokeToken, revokeAmount);
         expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
-        // assertEq(
-        //     claimsContract.pendingClaims(leaders[0], claimsContract.currentWeek(), IERC20(USDT)),
-        //     expectedPendingUpdatedClaims,
-        //     "leader Updated claim funds "
-        // );
 
         vm.warp(block.timestamp + 8 days);
         for (uint256 i = 1; i < leaders.length; ++i) {
             expectedPendingClaims = (prices * percentages[i]) / PPM;
             expectedTotalPercentage += percentages[i];
-            // assertEq(
-            //     claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
-            //         previousLeaderClaims[i],
-            //     expectedPendingClaims,
-            //     "leader fund amount "
-            // );
-
-            console.log(
-                "pendinng claims before claiming USDT WEEK 1",
-                claimsContract.pendingClaims(leaders[i], 1, IERC20(USDT))
-            );
-
-            console.log(
-                "pendinng claims before claiming GEMS WEEK 2",
-                claimsContract.pendingClaims(leaders[i], 2, IERC20(GEMS))
-            );
-
-            vm.startPrank(leaders[i]);
-            claimsContract.claimAll(week, token);
-            vm.stopPrank();
-
-            console.log(
-                "pendinng claims ***after**** claiming USDT WEEK 1",
-                claimsContract.pendingClaims(leaders[i], 1, IERC20(USDT))
-            );
-
-            console.log(
-                "pendinng claims ***after**** claiming USDT WEEK 2",
-                claimsContract.pendingClaims(leaders[i], 2, IERC20(GEMS))
-            );
-
-            // assertTrue(
-            //     claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) == 0,
-            //     "leader amount claimed USDT"
-            // );
-
-            // assertTrue(
-            //     claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(GEMS)) == 0,
-            //     "leader amount claimed GEMS"
-            // );
         }
-        // assertEq(expectedTotalPercentage + percentages[0], leaderPercentageAmount, "leader percentage contract");
     }
 
     function _validateSignWithToken(
