@@ -36,7 +36,8 @@ contract SubscriptionTest is Test {
         signer = vm.addr(privateKey);
 
         // -----------------------------------  deal ----------------------------------- //
-        deal(address(GEMS), user, 4000000 * 1e18);
+        deal(address(GEMS), user, 8000000 * 1e18);
+        deal(address(GEMS), funds, 8000000 * 1e18);
 
         // -----------------------------------  Contract ----------------------------------- //
         subscriptionContract = new Subscription(
@@ -56,6 +57,7 @@ contract SubscriptionTest is Test {
         uint256 fee;
 
         uint256 deadline = block.timestamp;
+
         uint256 price = 392522046;
         uint8 nf = 22;
 
@@ -77,10 +79,10 @@ contract SubscriptionTest is Test {
         //node buying
         vm.startPrank(user);
         GEMS.forceApprove(address(subscriptionContract), GEMS.balanceOf(user));
-        subscriptionContract.Subscribe(price, deadline, nf, v, r, s);
+        subscriptionContract.subscribe(price, deadline, nf, v, r, s);
         vm.stopPrank();
 
-        // wallet balance assertion
+        //wallet balance assertion
         assertEq(
             GEMS.balanceOf(subscriptionContract.fundsWallet()) -
                 prevWalletFunds,

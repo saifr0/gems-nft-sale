@@ -7,11 +7,9 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-import {Test, console} from "../lib/forge-std/src/Test.sol";
-
 /// @title Subscription contract
-/// @notice Implements the subscription
-/// @notice The subscription contract allows you to subscribe using GEMS.
+/// @notice Implements the functionality of purchasing premium subscription
+/// @notice The subscription contract allows you to get premium subscription using GEMS.
 contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
@@ -39,8 +37,8 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Gives info about user's subscribed indexes
     mapping(address => uint256) public indexes;
 
-    /// @notice Stores the end time of the given index
-    mapping(uint256 => uint256) public endTimes;
+    /// @notice Stores the end time of the user's subscribed index
+    mapping(address => mapping(uint256 => uint256)) public subscriptionTimes;
 
     /// @dev Emitted when address of signer is updated
     event SignerUpdated(address oldSigner, address newSigner);
@@ -55,14 +53,15 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     event BuyEnableUpdated(bool oldAccess, bool newAccess);
 
     /// @dev Emitted when subscription fee is updated
-    event subscriptionFeeUpdated(uint256 oldFee, uint256 newFee);
+    event SubscriptionFeeUpdated(uint256 oldFee, uint256 newFee);
 
     /// @dev Emitted when subscription is purchased
     event Subscribed(
         uint256 tokenPrice,
         address indexed by,
         uint256 amountPurchased,
-        uint256 index
+        uint256 index,
+        uint256 indexed endTime
     );
 
     /// @notice Thrown when address is blacklisted
@@ -74,13 +73,13 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Thrown when sign deadline is expired
     error DeadlineExpired();
 
-    /// @notice Thrown when value to transfer is zero
+    /// @notice Thrown when value is zero
     error ZeroValue();
 
     /// @notice Thrown when updating with the same value as previously stored
     error IdenticalValue();
 
-    /// @notice Thrown when updating an address with zero address
+    /// @notice Thrown when an address is zero address
     error ZeroAddress();
 
     /// @notice Thrown when sign is invalid
@@ -89,12 +88,6 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Restricts when updating wallet/contract address with zero address
     modifier checkAddressZero(address which) {
         _checkAddressZero(which);
-        _;
-    }
-
-    /// @dev Checks buyEnabled and user not blacklisted, if yes then reverts
-    modifier canBuy() {
-        _canBuy();
         _;
     }
 
@@ -126,21 +119,29 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         subscriptionFee = subscriptionFeeInit;
     }
 
-    /// @notice Subscribes with GEMS
+    /// @notice Purchases the premium subscription with GEMS
     /// @param referenceTokenPrice The current price of GEMS in 10 decimals
     /// @param deadline The deadline is validity of the signature
     /// @param referenceNormalizationFactor The normalization factor
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
-    function Subscribe(
+    function subscribe(
         uint256 referenceTokenPrice,
         uint256 deadline,
         uint8 referenceNormalizationFactor,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external canBuy nonReentrant {
+    ) external nonReentrant {
+        if (!buyEnabled) {
+            revert BuyNotEnabled();
+        }
+
+        if (blacklistAddress[msg.sender]) {
+            revert Blacklisted();
+        }
+
         if (block.timestamp > deadline) {
             revert DeadlineExpired();
         }
@@ -150,35 +151,48 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         }
 
         // The input must have been signed by the presale signer
-        _verifySignature(
-            keccak256(
-                abi.encodePacked(
-                    msg.sender,
-                    referenceNormalizationFactor,
-                    referenceTokenPrice,
-                    deadline,
-                    GEMS
-                )
-            ),
-            v,
-            r,
-            s
+        bytes32 encodedMessageHash = keccak256(
+            abi.encodePacked(
+                msg.sender,
+                referenceNormalizationFactor,
+                referenceTokenPrice,
+                deadline,
+                GEMS
+            )
         );
+
+        if (
+            signerWallet !=
+            ECDSA.recover(
+                MessageHashUtils.toEthSignedMessageHash(encodedMessageHash),
+                v,
+                r,
+                s
+            )
+        ) {
+            revert InvalidSignature();
+        }
 
         uint256 index;
         uint256 purchaseAmount = (subscriptionFee *
             (10 ** referenceNormalizationFactor)) / referenceTokenPrice;
-        _checkZeroValue(purchaseAmount);
+
+        if (purchaseAmount == 0) {
+            revert ZeroValue();
+        }
+
         GEMS.safeTransferFrom(msg.sender, fundsWallet, purchaseAmount);
-        indexes[msg.sender]++;
-        index = indexes[msg.sender];
-        endTimes[index] = block.timestamp + SUBSCRIPTION_TIME;
+        index = ++indexes[msg.sender];
+        subscriptionTimes[msg.sender][index] =
+            block.timestamp +
+            SUBSCRIPTION_TIME;
 
         emit Subscribed({
             tokenPrice: referenceTokenPrice,
             by: msg.sender,
             amountPurchased: purchaseAmount,
-            index: index
+            index: index,
+            endTime: subscriptionTimes[msg.sender][index]
         });
     }
 
@@ -242,7 +256,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
 
-        emit subscriptionFeeUpdated({oldFee: oldFee, newFee: newFee});
+        emit SubscriptionFeeUpdated({oldFee: oldFee, newFee: newFee});
 
         subscriptionFee = newFee;
     }
@@ -265,49 +279,11 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         blacklistAddress[which] = access;
     }
 
-    /// @dev Checks value, if zero then reverts
-    function _checkZeroValue(uint256 value) private pure {
-        if (value == 0) {
-            revert ZeroValue();
-        }
-    }
-
-    /// @dev Verifies the address that signed a hashed message (`hash`) with `signature`
-    function _verifySignature(
-        bytes32 encodedMessageHash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) private view {
-        if (
-            signerWallet !=
-            ECDSA.recover(
-                MessageHashUtils.toEthSignedMessageHash(encodedMessageHash),
-                v,
-                r,
-                s
-            )
-        ) {
-            revert InvalidSignature();
-        }
-    }
-
     /// @dev Checks zero address, if zero then reverts
     /// @param which The `which` address to check for zero address
     function _checkAddressZero(address which) private pure {
         if (which == address(0)) {
             revert ZeroAddress();
-        }
-    }
-
-    /// @dev Checks buyEnabled, user not blacklisted , if yes then reverts
-    function _canBuy() private view {
-        if (!buyEnabled) {
-            revert BuyNotEnabled();
-        }
-
-        if (blacklistAddress[msg.sender]) {
-            revert Blacklisted();
         }
     }
 }
