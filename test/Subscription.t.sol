@@ -80,6 +80,19 @@ contract SubscriptionTest is Test {
         vm.startPrank(user);
         GEMS.forceApprove(address(subscriptionContract), GEMS.balanceOf(user));
         subscriptionContract.subscribe(price, deadline, nf, v, r, s);
+        console.log("time is===", subscriptionContract.subscriptionTimes(user));
+        vm.stopPrank();
+        vm.warp(block.timestamp + 3600);
+
+        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignWithToken(
+            price,
+            nf,
+            GEMS,
+            block.timestamp
+        );
+        vm.startPrank(user);
+
+        subscriptionContract.subscribe(price, block.timestamp, nf, v1, r1, s1);
         vm.stopPrank();
 
         //wallet balance assertion

@@ -14,10 +14,10 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     /// @dev The constant value helps in calculating subscription time for each index
-    uint256 private constant SUBSCRIPTION_TIME = 365 days;
+    uint256 private SUBSCRIPTION_TIME = 3600;
 
     /// @notice The address of the GEMS contract
-    IERC20 public immutable GEMS;
+    IERC20 public GEMS;
 
     /// @notice The subscription fee in USD
     uint256 public subscriptionFee;
@@ -34,11 +34,8 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Gives info about address's permission
     mapping(address => bool) public blacklistAddress;
 
-    /// @notice Gives info about user's subscribed indexes
-    mapping(address => uint256) public indexes;
-
     /// @notice Stores the end time of the user's subscribed index
-    mapping(address => mapping(uint256 => uint256)) public subscriptionTimes;
+    mapping(address => uint256) public subscriptionTimes;
 
     /// @dev Emitted when address of signer is updated
     event SignerUpdated(address oldSigner, address newSigner);
@@ -60,7 +57,6 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         uint256 tokenPrice,
         address indexed by,
         uint256 amountPurchased,
-        uint256 index,
         uint256 indexed endTime
     );
 
@@ -84,6 +80,9 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Thrown when sign is invalid
     error InvalidSignature();
+
+    /// @notice Thrown when user have already have subscription
+    error AlreadySubscribed();
 
     /// @dev Restricts when updating wallet/contract address with zero address
     modifier checkAddressZero(address which) {
@@ -146,6 +145,10 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
             revert DeadlineExpired();
         }
 
+        if (subscriptionTimes[msg.sender] > block.timestamp) {
+            revert AlreadySubscribed();
+        }
+
         if (referenceTokenPrice == 0 || referenceNormalizationFactor == 0) {
             revert ZeroValue();
         }
@@ -173,7 +176,6 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
             revert InvalidSignature();
         }
 
-        uint256 index;
         uint256 purchaseAmount = (subscriptionFee *
             (10 ** referenceNormalizationFactor)) / referenceTokenPrice;
 
@@ -182,17 +184,13 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         }
 
         GEMS.safeTransferFrom(msg.sender, fundsWallet, purchaseAmount);
-        index = ++indexes[msg.sender];
-        subscriptionTimes[msg.sender][index] =
-            block.timestamp +
-            SUBSCRIPTION_TIME;
+        subscriptionTimes[msg.sender] = block.timestamp + SUBSCRIPTION_TIME;
 
         emit Subscribed({
             tokenPrice: referenceTokenPrice,
             by: msg.sender,
             amountPurchased: purchaseAmount,
-            index: index,
-            endTime: subscriptionTimes[msg.sender][index]
+            endTime: subscriptionTimes[msg.sender]
         });
     }
 
@@ -277,6 +275,16 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         emit BlacklistUpdated({which: which, accessNow: access});
 
         blacklistAddress[which] = access;
+    }
+
+    function updateGEMS(
+        IERC20 newGEMS
+    ) external checkAddressZero(address(newGEMS)) onlyOwner {
+        GEMS = newGEMS;
+    }
+
+    function updateSubscriptionTime(uint256 newTime) external onlyOwner {
+        SUBSCRIPTION_TIME = newTime;
     }
 
     /// @dev Checks zero address, if zero then reverts
