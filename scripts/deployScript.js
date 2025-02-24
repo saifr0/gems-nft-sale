@@ -17,20 +17,22 @@ async function main() {
 
     const nodeFundsWallet = '0x5d63cE81FAbaCf586A8fd4039Db08B59BE909D5b';
     const minerFundsWallet = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
+    const insuranceFundsWallet = '0x22dA5C97F742eC3828a8183896dA56B44eFd0471';
+
     const signerAddress = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
     const owner = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
     const gemsAddress = '0x7Ddd14E3a173A5Db7bB8fd74b82b667F221492B9';
     const usdtAddress = '0x6fEA2f1b82aFC40030520a6C49B0d3b652A65915';
     const claimsContractAddress = '';
-    const minerNftContractAddress = '';
-    const nodeNftContractAddress = '';
+    const minerNftContractAddress = '0x873C2AAd39f94D833aF2e985858C4Ac08aF9BAB0';
+    const nodeNftContractAddress = '0xE42559FDd11306b39fF62590Ed3BDC859705A80A';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
     const priceAccretionPercentagePPMInit = '20000';
     const nodesNFTPriceInit = '99000000';
     const minersNFTPriceInit = ['199000000', '3999000000', '19999000000'];
     const minerNFTUri = 'ipfs://bafybeia6j3ywueosrlkar25wms2vcidsuv4myaz5c2is63vl3lbvjik5xy/';
     const nodeNFTUri = 'ipfs://bafkreihq7snmnquzs3n6jcrt4k7indhfw7wd57atulee7y2wxbwqxytaga';
-    const lastWeek = 0;
+    const lastWeek = 1;
 
     // -------------------------------- TokenRegistry------------------------------------------ //
     //*this is simple token registry deployment script, not the upgradable
@@ -65,59 +67,69 @@ async function main() {
     // await new Promise((resolve) => setTimeout(resolve, 30000));
     // verify(NodeNft.target, [owner, nodeNFTUri]);
     // console.log('NodeNft Verified');
+    // return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek]);
+    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740402849]);
     // console.log('Deploying Claims...');
     // await Claims.waitForDeployment();
     // console.log('Claims deployed to---------', Claims.target);
     // await new Promise((resolve) => setTimeout(resolve, 30000));
-    verify('0x0AA3e4B5066a476E8c662829736f066E747f1bf1', [owner, lastWeek]);
-    console.log('Claims Verified');
+    // verify(Claims.target, [owner, lastWeek, 1740402849]);
+    // console.log('Claims Verified');
+    // return;
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
 
-    const PreSale = await hre.ethers.deployContract('PreSale', [
+    // const PreSale = await hre.ethers.deployContract('PreSale', [
+    //     nodeFundsWallet,
+    //     minerFundsWallet,
+    //     insuranceFundsWallet,
+    //     signerAddress,
+    //     owner,
+    //     '0x0Cd7fd3E68C14576Ce13EfCcbA23679aA7a781f7',
+    //     minerNftContractAddress,
+    //     nodeNftContractAddress,
+    //     tokenRegistryAddress,
+    //     nodesNFTPriceInit,
+    //     0,
+    //     0,
+    //     priceAccretionPercentagePPMInit,
+    //     20000,
+    //     minersNFTPriceInit
+    // ]);
+
+    // console.log('Deploying PreSale...');
+
+    // await PreSale.waitForDeployment();
+
+    // console.log('PreSale deployed to--------', PreSale.target);
+
+    // await new Promise((resolve) => setTimeout(resolve, 30000));
+
+    verify('0x0c140fED346082E41BE00132ab269e7512073EaF', [
         nodeFundsWallet,
         minerFundsWallet,
+        insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x0AA3e4B5066a476E8c662829736f066E747f1bf1',
-        '0x16D5a04EB433af0e0973B1E2224b665f8fF26913',
-        '0x178Cb95Fa799710C0460Eb17715e236BbD3181f0',
+        '0x0Cd7fd3E68C14576Ce13EfCcbA23679aA7a781f7',
+        minerNftContractAddress,
+        nodeNftContractAddress,
         tokenRegistryAddress,
         nodesNFTPriceInit,
+        0,
+        0,
         priceAccretionPercentagePPMInit,
-        minersNFTPriceInit
-    ]);
-
-    console.log('Deploying PreSale...');
-
-    await PreSale.waitForDeployment();
-
-    console.log('PreSale deployed to--------', PreSale.target);
-
-    await new Promise((resolve) => setTimeout(resolve, 30000));
-
-    verify(PreSale.target, [
-        nodeFundsWallet,
-        minerFundsWallet,
-        signerAddress,
-        owner,
-        '0x0AA3e4B5066a476E8c662829736f066E747f1bf1',
-        '0x16D5a04EB433af0e0973B1E2224b665f8fF26913',
-        '0x178Cb95Fa799710C0460Eb17715e236BbD3181f0',
-        tokenRegistryAddress,
-        nodesNFTPriceInit,
-        priceAccretionPercentagePPMInit,
+        20000,
         minersNFTPriceInit
     ]);
 
     console.log('PreSale Verified');
 
-    let claims = await hre.ethers.getContractAt('Claims', '0x0AA3e4B5066a476E8c662829736f066E747f1bf1');
+    // let claims = await hre.ethers.getContractAt('Claims', '0x0AA3e4B5066a476E8c662829736f066E747f1bf1');
 
-    await claims.updatePresaleAddress(PreSale.target);
+    // await claims.updatePresaleAddress(PreSale.target);
 
     return;
 

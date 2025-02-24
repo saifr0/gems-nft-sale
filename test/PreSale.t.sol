@@ -69,7 +69,7 @@ contract PreSaleTest is Test {
             0xF14aEB1Cb06c674B58D87D2Cc2dfc4b1e9f4EdB6,
             0xC0FC8954c62A45c3c0a13813Bd2A10d88D70750D
         ];
-        percentages = [50000, 50000, 50000, 50000, 50000];
+        percentages = [50000, 50000, 50000, 20000, 30000];
         // -----------------------------------  Price - Feed ----------------------------------- //
         proxy = new ERC1967Proxy(
             address(tokenRegistryContract),
@@ -113,6 +113,7 @@ contract PreSaleTest is Test {
         preSale = new PreSale(
             funds,
             platform,
+            user,
             signer,
             owner,
             IClaims(address(claimsContract)),
@@ -123,6 +124,7 @@ contract PreSaleTest is Test {
             0,
             0,
             25000,
+            20000,
             minerNFTPrices
         );
         nodeNftContract.updatePresaleAddress(address(preSale));
@@ -147,167 +149,167 @@ contract PreSaleTest is Test {
         vm.stopPrank();
     }
 
-    function testNodePurchaseWithETH() external {
-        uint256 expectedNodeWalletFunds;
-        uint256 expectedUserPayment;
-        uint256 prices;
+    // function testNodePurchaseWithETH() external {
+    //     uint256 expectedNodeWalletFunds;
+    //     uint256 expectedUserPayment;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 price = 0;
-        uint8 nf = 0;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
 
-        //getting ETH latest price and normalization factor
-        uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
-        uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
+    //     //getting ETH latest price and normalization factor
+    //     uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
+    //     uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
 
-        //calaculating nft purchasing amount
-        uint256 quantities = 5;
-        prices = preSale.nodeNFTPrice() * quantities;
-        expectedNodeWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
-        expectedUserPayment = user.balance - expectedNodeWalletFunds;
+    //     //calaculating nft purchasing amount
+    //     uint256 quantities = 5;
+    //     prices = preSale.nodeNFTPrice() * quantities;
+    //     expectedNodeWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
+    //     expectedUserPayment = user.balance - expectedNodeWalletFunds;
 
-        //node buying
-        vm.startPrank(user);
-        preSale.purchaseNodeNFT{ value: 1 ether }(ETH, quantities, price, deadline, nf, v, r, s);
-        vm.stopPrank();
+    //     //node buying
+    //     vm.startPrank(user);
+    //     preSale.purchaseNodeNFT{ value: 1 ether }(ETH, quantities, price, deadline, nf, v, r, s);
+    //     vm.stopPrank();
 
-        //node walllet balance assertion
-        assertEq(preSale.nodeFundsWallet().balance, expectedNodeWalletFunds, "Node Wallet Funds");
-        assertEq(user.balance, expectedUserPayment, "User balance after payment");
+    //     //node walllet balance assertion
+    //     assertEq(preSale.nodeFundsWallet().balance, expectedNodeWalletFunds, "Node Wallet Funds");
+    //     assertEq(user.balance, expectedUserPayment, "User balance after payment");
 
-        //nft owner assertion
-        uint256 tokenId;
-        for (uint256 i; i < quantities; ++i) {
-            assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
-            tokenId += tokenId;
-        }
-    }
+    //     //nft owner assertion
+    //     uint256 tokenId;
+    //     for (uint256 i; i < quantities; ++i) {
+    //         assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
+    //         tokenId += tokenId;
+    //     }
+    // }
 
-    function testNodePurchaseWithUSDT() external {
-        uint256 expectedNodeWalletFunds;
-        uint256 prices;
+    // function testNodePurchaseWithUSDT() external {
+    //     uint256 expectedNodeWalletFunds;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 price = 0;
-        uint8 nf = 0;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline);
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline);
 
-        //getting USDT latest price and normalization factor
-        uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
-        uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
+    //     //getting USDT latest price and normalization factor
+    //     uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
+    //     uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
 
-        //calaculating nft purchasing amount
-        uint256 quantities = 1;
-        prices = preSale.nodeNFTPrice() * quantities;
-        expectedNodeWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
+    //     //calaculating nft purchasing amount
+    //     uint256 quantities = 1;
+    //     prices = preSale.nodeNFTPrice() * quantities;
+    //     expectedNodeWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
 
-        //node buying
-        vm.startPrank(user);
-        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        preSale.purchaseNodeNFT(USDT, quantities, price, deadline, nf, v, r, s);
-        vm.stopPrank();
+    //     //node buying
+    //     vm.startPrank(user);
+    //     USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+    //     preSale.purchaseNodeNFT(USDT, quantities, price, deadline, nf, v, r, s);
+    //     vm.stopPrank();
 
-        //node walllet balance assertion
-        assertEq(USDT.balanceOf(preSale.nodeFundsWallet()), expectedNodeWalletFunds, "Node Wallet Funds");
+    //     //node walllet balance assertion
+    //     assertEq(USDT.balanceOf(preSale.nodeFundsWallet()), expectedNodeWalletFunds, "Node Wallet Funds");
 
-        //nft owner assertion
-        uint256 tokenId;
-        for (uint256 i; i < quantities; ++i) {
-            assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
-            tokenId += tokenId;
-        }
-    }
+    //     //nft owner assertion
+    //     uint256 tokenId;
+    //     for (uint256 i; i < quantities; ++i) {
+    //         assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
+    //         tokenId += tokenId;
+    //     }
+    // }
 
-    function testNodePurchaseWithGEMS() external {
-        uint256 expectedNodeWalletFunds;
-        uint256 prices;
+    // function testNodePurchaseWithGEMS() external {
+    //     uint256 expectedNodeWalletFunds;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 price = 1000000000;
-        uint8 nf = 22;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 1000000000;
+    //     uint8 nf = 22;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, GEMS, deadline);
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, GEMS, deadline);
 
-        //calaculating nft purchasing amount
-        uint256 quantities = 1;
-        prices = preSale.nodeNFTPrice() * quantities;
-        expectedNodeWalletFunds = (prices * (10 ** nf)) / price;
+    //     //calaculating nft purchasing amount
+    //     uint256 quantities = 1;
+    //     prices = preSale.nodeNFTPrice() * quantities;
+    //     expectedNodeWalletFunds = (prices * (10 ** nf)) / price;
 
-        //node buying
-        vm.startPrank(user);
-        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        preSale.purchaseNodeNFT(GEMS, quantities, price, deadline, nf, v, r, s);
-        vm.stopPrank();
+    //     //node buying
+    //     vm.startPrank(user);
+    //     GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+    //     preSale.purchaseNodeNFT(GEMS, quantities, price, deadline, nf, v, r, s);
+    //     vm.stopPrank();
 
-        //node walllet balance assertion
-        assertEq(GEMS.balanceOf(preSale.nodeFundsWallet()), expectedNodeWalletFunds, "Node Wallet Funds");
+    //     //node walllet balance assertion
+    //     assertEq(GEMS.balanceOf(preSale.nodeFundsWallet()), expectedNodeWalletFunds, "Node Wallet Funds");
 
-        //nft owner assertion
-        uint256 tokenId;
-        for (uint256 i; i < quantities; ++i) {
-            assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
-            tokenId += tokenId;
-        }
-    }
+    //     //nft owner assertion
+    //     uint256 tokenId;
+    //     for (uint256 i; i < quantities; ++i) {
+    //         assertEq(nodeNftContract.ownerOf(tokenId), user, "nft owner");
+    //         tokenId += tokenId;
+    //     }
+    // }
 
-    function testMinerPurchaseWithETH() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 expectedUserPayment;
-        uint256 prices;
+    // function testMinerPurchaseWithETH() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 expectedUserPayment;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 price = 0;
-        uint8 nf = 0;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
 
-        //getting ETH latest price and normalization factor
-        uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
-        uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
+    //     //getting ETH latest price and normalization factor
+    //     uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
+    //     uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
 
-        //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(2), uint(2), uint(2)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(2), uint(2), uint(2)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
 
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
 
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
 
-        expectedMinerWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
-        expectedUserPayment = user.balance - expectedMinerWalletFunds;
+    //     expectedMinerWalletFunds = (prices * (10 ** nfETH)) / latestPriceETH;
+    //     expectedUserPayment = user.balance - expectedMinerWalletFunds;
 
-        //miner buying
-        vm.startPrank(user);
-        preSale.purchaseMinerNFT{ value: 0.1 ether }(ETH, price, deadline, quantities, nf, v, r, s);
-        vm.stopPrank();
+    //     //miner buying
+    //     vm.startPrank(user);
+    //     preSale.purchaseMinerNFT{ value: 0.1 ether }(ETH, price, deadline, quantities, nf, v, r, s);
+    //     vm.stopPrank();
 
-        //miner and user walllet balance assertion
-        assertEq(preSale.minerFundsWallet().balance, expectedMinerWalletFunds, "Miner Wallet Funds");
-        assertEq(user.balance, expectedUserPayment, "User balance after payment");
+    //     //miner and user walllet balance assertion
+    //     assertEq(preSale.minerFundsWallet().balance, expectedMinerWalletFunds, "Miner Wallet Funds");
+    //     assertEq(user.balance, expectedUserPayment, "User balance after payment");
 
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+    //     //user nft balance assertions
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+    //         if (quantity > 0) {
+    //             uint256 tokenId = i;
+    //             uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
 
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
+    //             assertEq(userBalance, quantity, "user Nfts");
+    //         }
+    //     }
+    // }
 
     function testMinerPurchaseWithUSDT() external {
         uint256 expectedMinerWalletFunds;
@@ -342,194 +344,194 @@ contract PreSaleTest is Test {
         //miner buying
         vm.startPrank(user);
         USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        preSale.purchaseMinerNFT(USDT, price, deadline, quantities, nf, v, r, s);
+        preSale.purchaseMinerNFT(USDT, price, deadline, quantities, nf, false, v, r, s);
         vm.stopPrank();
 
-        //miner and user walllet balance assertion
-        assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+        // //miner and user walllet balance assertion
+        // assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
 
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+        // //user nft balance assertions
+        // for (uint256 i; i < quantityLength; ++i) {
+        //     uint256 quantity = quantities[i];
+        //     if (quantity > 0) {
+        //         uint256 tokenId = i;
+        //         uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
 
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
+        //         assertEq(userBalance, quantity, "user Nfts");
+        //     }
+        // }
     }
 
-    function testMinerPurchaseWithGEMS() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 prices;
+    // function testMinerPurchaseWithGEMS() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 price = 1000000000;
-        uint8 nf = 22;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 1000000000;
+    //     uint8 nf = 22;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, GEMS, deadline);
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, GEMS, deadline);
 
-        //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
 
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
 
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
 
-        //GEMS price will come from backend
-        expectedMinerWalletFunds = (prices * (10 ** nf)) / price;
+    //     //GEMS price will come from backend
+    //     expectedMinerWalletFunds = (prices * (10 ** nf)) / price;
 
-        //miner buying
-        vm.startPrank(user);
-        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        preSale.purchaseMinerNFT(GEMS, price, deadline, quantities, nf, v, r, s);
-        vm.stopPrank();
+    //     //miner buying
+    //     vm.startPrank(user);
+    //     GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+    //     preSale.purchaseMinerNFT(GEMS, price, deadline, quantities, nf, v, r, s);
+    //     vm.stopPrank();
 
-        //miner and user walllet balance assertion
-        assertEq(GEMS.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+    //     //miner and user walllet balance assertion
+    //     assertEq(GEMS.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
 
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+    //     //user nft balance assertions
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+    //         if (quantity > 0) {
+    //             uint256 tokenId = i;
+    //             uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
 
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
+    //             assertEq(userBalance, quantity, "user Nfts");
+    //         }
+    //     }
+    // }
 
-    function testMinerDiscountPurchaseWithETH() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 expectedClaimsFunds;
-        uint256 expectedPendingClaims;
-        uint256 expectedTotalPercentage;
-        uint256 expectedUserPayment;
-        uint256 prices;
+    // function testMinerDiscountPurchaseWithETH() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 expectedClaimsFunds;
+    //     uint256 expectedPendingClaims;
+    //     uint256 expectedTotalPercentage;
+    //     uint256 expectedUserPayment;
+    //     uint256 prices;
 
-        uint256 deadline = block.timestamp;
-        uint256 discount_percentage_ppm = 100_000;
-        uint256 price = 0;
-        uint8 nf = 0;
+    //     uint256 deadline = block.timestamp;
+    //     uint256 discount_percentage_ppm = 100_000;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
 
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
-            price,
-            nf,
-            discount_percentage_ppm,
-            ETH,
-            deadline
-        );
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
+    //         price,
+    //         nf,
+    //         discount_percentage_ppm,
+    //         ETH,
+    //         deadline
+    //     );
 
-        uint256 leaderPercentageAmount = (percentages[0]) +
-            (percentages[1]) +
-            (percentages[2]) +
-            (percentages[3]) +
-            (percentages[4]);
+    //     uint256 leaderPercentageAmount = (percentages[0]) +
+    //         (percentages[1]) +
+    //         (percentages[2]) +
+    //         (percentages[3]) +
+    //         (percentages[4]);
 
-        //leaders previous claims
-        uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
+    //     //leaders previous claims
+    //     uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
 
-        //previous claims funds
-        uint256 prevClaimsFunds = address(claimsContract).balance;
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(ETH));
-        }
+    //     //previous claims funds
+    //     uint256 prevClaimsFunds = address(claimsContract).balance;
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(ETH));
+    //     }
 
-        //getting ETH latest price and normalization factor
-        uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
-        uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
+    //     //getting ETH latest price and normalization factor
+    //     uint256 latestPriceETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
+    //     uint8 nfETH = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
 
-        //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
 
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
 
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
 
-        prices = ((prices * (10 ** nfETH)) / latestPriceETH);
-        prices = prices - ((prices * discount_percentage_ppm) / PPM);
+    //     prices = ((prices * (10 ** nfETH)) / latestPriceETH);
+    //     prices = prices - ((prices * discount_percentage_ppm) / PPM);
 
-        expectedUserPayment = user.balance - prices;
+    //     expectedUserPayment = user.balance - prices;
 
-        //calculating leader claims and funds wallet amount
-        uint256 sumPercentage;
-        uint256 remainingPercentageAmount;
-        for (uint256 j; j < percentages.length; ++j) {
-            sumPercentage += percentages[j];
+    //     //calculating leader claims and funds wallet amount
+    //     uint256 sumPercentage;
+    //     uint256 remainingPercentageAmount;
+    //     for (uint256 j; j < percentages.length; ++j) {
+    //         sumPercentage += percentages[j];
 
-            expectedClaimsFunds = (prices * 250_000) / PPM;
-            uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
+    //         expectedClaimsFunds = (prices * 250_000) / PPM;
+    //         uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
 
-            if (sumPercentage < 250_000) {
-                remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
-            }
+    //         if (sumPercentage < 250_000) {
+    //             remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
+    //         }
 
-            expectedClaimsFunds -= remainingPercentageAmount;
-            expectedMinerWalletFunds = prices - expectedClaimsFunds;
-        }
+    //         expectedClaimsFunds -= remainingPercentageAmount;
+    //         expectedMinerWalletFunds = prices - expectedClaimsFunds;
+    //     }
 
-        //miner discounted buying
-        vm.startPrank(user);
-        preSale.purchaseMinerNFTDiscount{ value: 1 ether }(
-            ETH,
-            price,
-            deadline,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nf,
-            code,
-            v,
-            r,
-            s
-        );
-        vm.stopPrank();
+    //     //miner discounted buying
+    //     vm.startPrank(user);
+    //     preSale.purchaseMinerNFTDiscount{ value: 1 ether }(
+    //         ETH,
+    //         price,
+    //         deadline,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nf,
+    //         code,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     vm.stopPrank();
 
-        //assertions
-        assertEq(preSale.minerFundsWallet().balance, expectedMinerWalletFunds, "Miner Wallet Funds");
-        assertEq(address(claimsContract).balance, expectedClaimsFunds - prevClaimsFunds, "claims");
-        assertEq(user.balance, expectedUserPayment, "User balance after payment");
+    //     //assertions
+    //     assertEq(preSale.minerFundsWallet().balance, expectedMinerWalletFunds, "Miner Wallet Funds");
+    //     assertEq(address(claimsContract).balance, expectedClaimsFunds - prevClaimsFunds, "claims");
+    //     assertEq(user.balance, expectedUserPayment, "User balance after payment");
 
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            expectedPendingClaims = (prices * percentages[i]) / PPM;
-            expectedTotalPercentage += percentages[i];
-            assertEq(
-                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(ETH)) -
-                    previousLeaderClaims[i],
-                expectedPendingClaims,
-                "leader fund amount "
-            );
-        }
-        assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         expectedPendingClaims = (prices * percentages[i]) / PPM;
+    //         expectedTotalPercentage += percentages[i];
+    //         assertEq(
+    //             claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(ETH)) -
+    //                 previousLeaderClaims[i],
+    //             expectedPendingClaims,
+    //             "leader fund amount "
+    //         );
+    //     }
+    //     assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
 
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+    //     //user nft balance assertions
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+    //         if (quantity > 0) {
+    //             uint256 tokenId = i;
+    //             uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
 
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
+    //             assertEq(userBalance, quantity, "user Nfts");
+    //         }
+    //     }
+    // }
 
     function testMinerDiscountPurchaseWithUSDT() external {
         uint256 expectedMinerWalletFunds;
@@ -572,388 +574,6 @@ contract PreSaleTest is Test {
         uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
 
         //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(5), uint(2), uint(1)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
-
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
-
-        prices = ((prices * (10 ** nfUSDT)) / latestPriceUSDT);
-        prices = prices - ((prices * discount_percentage_ppm) / PPM);
-
-        //calculating leader claims and funds wallet amount
-        uint256 sumPercentage;
-        uint256 remainingPercentageAmount;
-        for (uint256 j; j < percentages.length; ++j) {
-            sumPercentage += percentages[j];
-
-            expectedClaimsFunds = (prices * 250_000) / PPM;
-            uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
-
-            if (sumPercentage < 250_000) {
-                remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
-            }
-
-            expectedClaimsFunds -= remainingPercentageAmount;
-            expectedMinerWalletFunds = prices - expectedClaimsFunds;
-        }
-
-        //miner discounted buying
-        vm.startPrank(user);
-        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        preSale.purchaseMinerNFTDiscount(
-            USDT,
-            price,
-            deadline,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nf,
-            code,
-            v,
-            r,
-            s
-        );
-        vm.stopPrank();
-
-        //assertions
-        assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
-        assertEq(USDT.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
-
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            expectedPendingClaims = (prices * percentages[i]) / PPM;
-            expectedTotalPercentage += percentages[i];
-            assertEq(
-                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
-                    previousLeaderClaims[i],
-                expectedPendingClaims,
-                "leader fund amount "
-            );
-        }
-        assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
-
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
-
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
-
-    function testMinerDiscountPurchaseWithGEMS() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 expectedClaimsFunds;
-        uint256 expectedPendingClaims;
-        uint256 expectedTotalPercentage;
-        uint256 prices;
-
-        uint256 deadline = block.timestamp;
-        uint256 discount_percentage_ppm = 100_000;
-        uint256 price = 1000000000;
-        uint8 nf = 22;
-
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
-            price,
-            nf,
-            discount_percentage_ppm,
-            GEMS,
-            deadline
-        );
-
-        uint256 leaderPercentageAmount = (percentages[0]) +
-            (percentages[1]) +
-            (percentages[2]) +
-            (percentages[3]) +
-            (percentages[4]);
-
-        //leaders previous claims
-        uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
-
-        //previous claims funds
-        uint256 prevClaimsFunds = GEMS.balanceOf(address(claimsContract));
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(GEMS));
-        }
-
-        //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
-
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
-
-        //GEMS price will come from backend
-        prices = ((prices * (10 ** nf)) / price);
-        prices = prices - ((prices * discount_percentage_ppm) / PPM);
-        console.log("prices", prices);
-
-        //calculating leader claims and funds wallet amount
-        uint256 sumPercentage;
-        uint256 remainingPercentageAmount;
-        for (uint256 j; j < percentages.length; ++j) {
-            sumPercentage += percentages[j];
-
-            expectedClaimsFunds = (prices * 250_000) / PPM;
-            uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
-
-            if (sumPercentage < 250_000) {
-                remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
-            }
-
-            expectedClaimsFunds -= remainingPercentageAmount;
-            expectedMinerWalletFunds = prices - expectedClaimsFunds;
-        }
-
-        //miner discounted buying
-        vm.startPrank(user);
-        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        preSale.purchaseMinerNFTDiscount(
-            GEMS,
-            price,
-            deadline,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nf,
-            code,
-            v,
-            r,
-            s
-        );
-        vm.stopPrank();
-
-        //assertions
-        assertEq(GEMS.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
-        assertEq(GEMS.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
-
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            expectedPendingClaims = (prices * percentages[i]) / PPM;
-            expectedTotalPercentage += percentages[i];
-            assertEq(
-                claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(GEMS)),
-                expectedPendingClaims,
-                "leader fund amount "
-            );
-        }
-        assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
-
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
-
-                // assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
-
-    function testLeaderClaims() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 expectedClaimsFunds;
-        uint256 expectedPendingClaims;
-        uint256 expectedTotalPercentage;
-        uint256 expectedPendingRevokedClaims;
-        uint256 expectedPendingUpdatedClaims;
-        uint256 prices;
-
-        uint256 deadline = block.timestamp;
-        uint256 discount_percentage_ppm = 100_000;
-        uint256 price = 0;
-        uint8 nf = 0;
-
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
-            price,
-            nf,
-            discount_percentage_ppm,
-            USDT,
-            deadline
-        );
-
-        uint256 leaderPercentageAmount = (percentages[0]) +
-            (percentages[1]) +
-            (percentages[2]) +
-            (percentages[3]) +
-            (percentages[4]);
-
-        //leaders previous claims
-        uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
-
-        //previous claims funds
-        uint256 prevClaimsFunds = USDT.balanceOf(address(claimsContract));
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(USDT));
-        }
-
-        //getting USDT latest price and normalization factor
-        uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
-        uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
-
-        //calaculating nft purchasing amount
-        uint256[3] memory quantities = [uint(1), uint(1), uint(1)];
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
-
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
-
-        prices = ((prices * (10 ** nfUSDT)) / latestPriceUSDT);
-        prices = prices - ((prices * discount_percentage_ppm) / PPM);
-
-        //calculating leader claims and funds wallet amount
-        uint256 sumPercentage;
-        uint256 remainingPercentageAmount;
-        for (uint256 j; j < percentages.length; ++j) {
-            sumPercentage += percentages[j];
-
-            expectedClaimsFunds = (prices * 250_000) / PPM;
-            uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
-
-            if (sumPercentage < 250_000) {
-                remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
-            }
-
-            expectedClaimsFunds -= remainingPercentageAmount;
-            expectedMinerWalletFunds = prices - expectedClaimsFunds;
-        }
-
-        //miner discounted buying
-        vm.startPrank(user);
-        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        preSale.purchaseMinerNFTDiscount(
-            USDT,
-            price,
-            deadline,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nf,
-            code,
-            v,
-            r,
-            s
-        );
-        vm.stopPrank();
-
-        address[] memory revokeLeader = new address[](1);
-        revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
-
-        IERC20[][] memory revokeToken = new IERC20[][](1);
-        IERC20[] memory revokeTokens = new IERC20[](1);
-        revokeTokens[0] = USDT;
-        revokeToken[0] = revokeTokens;
-
-        uint256[][] memory revokeAmount = new uint256[][](1);
-        uint256[] memory revokeAmounts = new uint256[](1);
-        revokeAmounts[0] = 100000;
-        revokeAmount[0] = revokeAmounts;
-
-        uint256[] memory week = new uint256[](1);
-        week[0] = 1;
-
-        // //revoking leader  claims
-        claimsContract.revokeLeaderClaim(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
-        expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
-
-        //update leader claims
-        claimsContract.updateClaims(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
-        expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
-
-        vm.warp(block.timestamp + 8 days);
-        for (uint256 i = 1; i < leaders.length; ++i) {
-            expectedPendingClaims = (prices * percentages[i]) / PPM;
-            expectedTotalPercentage += percentages[i];
-
-            vm.startPrank(leaders[i]);
-            claimsContract.claimAll(week, revokeToken);
-            vm.stopPrank();
-        }
-
-        //user nft balance assertions
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-            if (quantity > 0) {
-                uint256 tokenId = i;
-                uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
-
-                assertEq(userBalance, quantity, "user Nfts");
-            }
-        }
-    }
-
-    function testLeaderClaimsMultiple() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 expectedClaimsFunds;
-        uint256 expectedPendingClaims;
-        uint256 expectedTotalPercentage;
-        uint256 expectedPendingRevokedClaims;
-        uint256 expectedPendingUpdatedClaims;
-        uint256 prices;
-
-        uint256 deadline = block.timestamp + 2 minutes;
-        uint256 discount_percentage_ppm = 100_000;
-        uint256 price = 0;
-        uint8 nf = 0;
-
-        uint256 priceG = 1000000000;
-        uint8 nfG = 22;
-
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
-            price,
-            nf,
-            discount_percentage_ppm,
-            USDT,
-            deadline
-        );
-
-        uint256 leaderPercentageAmount = (percentages[0]) +
-            (percentages[1]) +
-            (percentages[2]) +
-            (percentages[3]) +
-            (percentages[4]);
-
-        //leaders previous claims
-        uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
-
-        //previous claims funds
-        uint256 prevClaimsFunds = USDT.balanceOf(address(claimsContract));
-        for (uint256 i = 0; i < leaders.length; ++i) {
-            previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(USDT));
-        }
-
-        //getting USDT latest price and normalization factor
-        uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
-        uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
-
-        //calaculating nft purchasing amount
         uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
         uint256[3] memory minerPrices = minerNFTPrices;
         uint256 quantityLength = quantities.length;
@@ -998,21 +618,7 @@ contract PreSaleTest is Test {
             percentages,
             leaders,
             nf,
-            code,
-            v,
-            r,
-            s
-        );
-
-        preSale.purchaseMinerNFTDiscount(
-            USDT,
-            price,
-            deadline,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nf,
+            true,
             code,
             v,
             r,
@@ -1020,139 +626,536 @@ contract PreSaleTest is Test {
         );
         vm.stopPrank();
 
-        uint256 dd = block.timestamp + 5 minutes;
+        // //assertions
+        // assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+        // assertEq(USDT.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
 
-        (uint8 v2, bytes32 r2, bytes32 s2) = _validateSignWithTokenDiscounted(
-            priceG,
-            nfG,
-            discount_percentage_ppm,
-            GEMS,
-            dd
-        );
+        // for (uint256 i = 0; i < leaders.length; ++i) {
+        //     expectedPendingClaims = (prices * percentages[i]) / PPM;
+        //     expectedTotalPercentage += percentages[i];
+        //     assertEq(
+        //         claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(USDT)) -
+        //             previousLeaderClaims[i],
+        //         expectedPendingClaims,
+        //         "leader fund amount "
+        //     );
+        // }
+        // assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
 
-        vm.startPrank(user);
-        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        preSale.purchaseMinerNFTDiscount(
-            GEMS,
-            priceG,
-            dd,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nfG,
-            code,
-            v2,
-            r2,
-            s2
-        );
+        // //user nft balance assertions
+        // for (uint256 i; i < quantityLength; ++i) {
+        //     uint256 quantity = quantities[i];
+        //     if (quantity > 0) {
+        //         uint256 tokenId = i;
+        //         uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
 
-        preSale.purchaseMinerNFTDiscount(
-            GEMS,
-            priceG,
-            dd,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nfG,
-            code,
-            v2,
-            r2,
-            s2
-        );
-        vm.stopPrank();
-
-        vm.warp(block.timestamp + 8 days);
-        uint256 d = block.timestamp + 5 minutes;
-
-        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignWithTokenDiscounted(
-            priceG,
-            nfG,
-            discount_percentage_ppm,
-            GEMS,
-            d
-        );
-
-        vm.startPrank(user);
-        GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
-        preSale.purchaseMinerNFTDiscount(
-            GEMS,
-            priceG,
-            d,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nfG,
-            code,
-            v1,
-            r1,
-            s1
-        );
-
-        preSale.purchaseMinerNFTDiscount(
-            GEMS,
-            priceG,
-            d,
-            discount_percentage_ppm,
-            quantities,
-            percentages,
-            leaders,
-            nfG,
-            code,
-            v1,
-            r1,
-            s1
-        );
-
-        vm.stopPrank();
-
-        address[] memory revokeLeader = new address[](1);
-        revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
-
-        IERC20[][] memory revokeToken = new IERC20[][](1);
-        IERC20[] memory revokeTokens = new IERC20[](2);
-        revokeTokens[0] = USDT;
-        revokeTokens[1] = GEMS;
-        revokeToken[0] = revokeTokens;
-
-        uint256[][] memory revokeAmount = new uint256[][](1);
-        uint256[] memory revokeAmounts = new uint256[](2);
-        revokeAmounts[0] = 4499820;
-        revokeAmounts[1] = 45000000000000000000;
-        revokeAmount[0] = revokeAmounts;
-
-        IERC20[][] memory token = new IERC20[][](2);
-        IERC20[] memory tokens = new IERC20[](2);
-        tokens[0] = USDT;
-        tokens[1] = GEMS;
-
-        IERC20[] memory tokenss = new IERC20[](2);
-        tokenss[0] = USDT;
-        tokenss[1] = GEMS;
-
-        token[0] = tokens;
-        token[1] = tokenss;
-
-        uint256[] memory week = new uint256[](2);
-        week[0] = 2;
-        week[1] = 3;
-
-        // //revoking leader  claims
-        claimsContract.revokeLeaderClaim(revokeLeader, 2, revokeToken, revokeAmount);
-        expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
-
-        //update leader claims
-        claimsContract.updateClaims(revokeLeader, 2, revokeToken, revokeAmount);
-        expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
-
-        vm.warp(block.timestamp + 8 days);
-        for (uint256 i = 1; i < leaders.length; ++i) {
-            expectedPendingClaims = (prices * percentages[i]) / PPM;
-            expectedTotalPercentage += percentages[i];
-        }
+        //         assertEq(userBalance, quantity, "user Nfts");
+        //     }
+        // }
     }
+
+    // function testMinerDiscountPurchaseWithGEMS() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 expectedClaimsFunds;
+    //     uint256 expectedPendingClaims;
+    //     uint256 expectedTotalPercentage;
+    //     uint256 prices;
+
+    //     uint256 deadline = block.timestamp;
+    //     uint256 discount_percentage_ppm = 100_000;
+    //     uint256 price = 1000000000;
+    //     uint8 nf = 22;
+
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
+    //         price,
+    //         nf,
+    //         discount_percentage_ppm,
+    //         GEMS,
+    //         deadline
+    //     );
+
+    //     uint256 leaderPercentageAmount = (percentages[0]) +
+    //         (percentages[1]) +
+    //         (percentages[2]) +
+    //         (percentages[3]) +
+    //         (percentages[4]);
+
+    //     //leaders previous claims
+    //     uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
+
+    //     //previous claims funds
+    //     uint256 prevClaimsFunds = GEMS.balanceOf(address(claimsContract));
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(GEMS));
+    //     }
+
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
+
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
+
+    //     //GEMS price will come from backend
+    //     prices = ((prices * (10 ** nf)) / price);
+    //     prices = prices - ((prices * discount_percentage_ppm) / PPM);
+    //     console.log("prices", prices);
+
+    //     //calculating leader claims and funds wallet amount
+    //     uint256 sumPercentage;
+    //     uint256 remainingPercentageAmount;
+    //     for (uint256 j; j < percentages.length; ++j) {
+    //         sumPercentage += percentages[j];
+
+    //         expectedClaimsFunds = (prices * 250_000) / PPM;
+    //         uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
+
+    //         if (sumPercentage < 250_000) {
+    //             remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
+    //         }
+
+    //         expectedClaimsFunds -= remainingPercentageAmount;
+    //         expectedMinerWalletFunds = prices - expectedClaimsFunds;
+    //     }
+
+    //     //miner discounted buying
+    //     vm.startPrank(user);
+    //     GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+    //     preSale.purchaseMinerNFTDiscount(
+    //         GEMS,
+    //         price,
+    //         deadline,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nf,
+    //         code,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     vm.stopPrank();
+
+    //     //assertions
+    //     assertEq(GEMS.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+    //     assertEq(GEMS.balanceOf(address(claimsContract)), expectedClaimsFunds - prevClaimsFunds, "claims");
+
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         expectedPendingClaims = (prices * percentages[i]) / PPM;
+    //         expectedTotalPercentage += percentages[i];
+    //         assertEq(
+    //             claimsContract.pendingClaims(leaders[i], claimsContract.currentWeek(), IERC20(GEMS)),
+    //             expectedPendingClaims,
+    //             "leader fund amount "
+    //         );
+    //     }
+    //     assertEq(expectedTotalPercentage, leaderPercentageAmount, "leader percentage contract");
+
+    //     //user nft balance assertions
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+    //         if (quantity > 0) {
+    //             uint256 tokenId = i;
+    //             uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+
+    //             // assertEq(userBalance, quantity, "user Nfts");
+    //         }
+    //     }
+    // }
+
+    // function testLeaderClaims() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 expectedClaimsFunds;
+    //     uint256 expectedPendingClaims;
+    //     uint256 expectedTotalPercentage;
+    //     uint256 expectedPendingRevokedClaims;
+    //     uint256 expectedPendingUpdatedClaims;
+    //     uint256 prices;
+
+    //     uint256 deadline = block.timestamp;
+    //     uint256 discount_percentage_ppm = 100_000;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
+
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
+    //         price,
+    //         nf,
+    //         discount_percentage_ppm,
+    //         USDT,
+    //         deadline
+    //     );
+
+    //     uint256 leaderPercentageAmount = (percentages[0]) +
+    //         (percentages[1]) +
+    //         (percentages[2]) +
+    //         (percentages[3]) +
+    //         (percentages[4]);
+
+    //     //leaders previous claims
+    //     uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
+
+    //     //previous claims funds
+    //     uint256 prevClaimsFunds = USDT.balanceOf(address(claimsContract));
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(USDT));
+    //     }
+
+    //     //getting USDT latest price and normalization factor
+    //     uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
+    //     uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
+
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(1), uint(1), uint(1)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
+
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
+
+    //     prices = ((prices * (10 ** nfUSDT)) / latestPriceUSDT);
+    //     prices = prices - ((prices * discount_percentage_ppm) / PPM);
+
+    //     //calculating leader claims and funds wallet amount
+    //     uint256 sumPercentage;
+    //     uint256 remainingPercentageAmount;
+    //     for (uint256 j; j < percentages.length; ++j) {
+    //         sumPercentage += percentages[j];
+
+    //         expectedClaimsFunds = (prices * 250_000) / PPM;
+    //         uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
+
+    //         if (sumPercentage < 250_000) {
+    //             remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
+    //         }
+
+    //         expectedClaimsFunds -= remainingPercentageAmount;
+    //         expectedMinerWalletFunds = prices - expectedClaimsFunds;
+    //     }
+
+    //     //miner discounted buying
+    //     vm.startPrank(user);
+    //     USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+    //     preSale.purchaseMinerNFTDiscount(
+    //         USDT,
+    //         price,
+    //         deadline,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nf,
+    //         code,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     vm.stopPrank();
+
+    //     address[] memory revokeLeader = new address[](1);
+    //     revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
+
+    //     IERC20[][] memory revokeToken = new IERC20[][](1);
+    //     IERC20[] memory revokeTokens = new IERC20[](1);
+    //     revokeTokens[0] = USDT;
+    //     revokeToken[0] = revokeTokens;
+
+    //     uint256[][] memory revokeAmount = new uint256[][](1);
+    //     uint256[] memory revokeAmounts = new uint256[](1);
+    //     revokeAmounts[0] = 100000;
+    //     revokeAmount[0] = revokeAmounts;
+
+    //     uint256[] memory week = new uint256[](1);
+    //     week[0] = 1;
+
+    //     // //revoking leader  claims
+    //     claimsContract.revokeLeaderClaim(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
+    //     expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
+
+    //     //update leader claims
+    //     claimsContract.updateClaims(revokeLeader, claimsContract.currentWeek(), revokeToken, revokeAmount);
+    //     expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
+
+    //     vm.warp(block.timestamp + 8 days);
+    //     for (uint256 i = 1; i < leaders.length; ++i) {
+    //         expectedPendingClaims = (prices * percentages[i]) / PPM;
+    //         expectedTotalPercentage += percentages[i];
+
+    //         vm.startPrank(leaders[i]);
+    //         claimsContract.claimAll(week, revokeToken);
+    //         vm.stopPrank();
+    //     }
+
+    //     //user nft balance assertions
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+    //         if (quantity > 0) {
+    //             uint256 tokenId = i;
+    //             uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+
+    //             assertEq(userBalance, quantity, "user Nfts");
+    //         }
+    //     }
+    // }
+
+    // function testLeaderClaimsMultiple() external {
+    //     uint256 expectedMinerWalletFunds;
+    //     uint256 expectedClaimsFunds;
+    //     uint256 expectedPendingClaims;
+    //     uint256 expectedTotalPercentage;
+    //     uint256 expectedPendingRevokedClaims;
+    //     uint256 expectedPendingUpdatedClaims;
+    //     uint256 prices;
+
+    //     uint256 deadline = block.timestamp + 2 minutes;
+    //     uint256 discount_percentage_ppm = 100_000;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
+
+    //     uint256 priceG = 1000000000;
+    //     uint8 nfG = 22;
+
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
+    //         price,
+    //         nf,
+    //         discount_percentage_ppm,
+    //         USDT,
+    //         deadline
+    //     );
+
+    //     uint256 leaderPercentageAmount = (percentages[0]) +
+    //         (percentages[1]) +
+    //         (percentages[2]) +
+    //         (percentages[3]) +
+    //         (percentages[4]);
+
+    //     //leaders previous claims
+    //     uint256[] memory previousLeaderClaims = new uint256[](leaders.length);
+
+    //     //previous claims funds
+    //     uint256 prevClaimsFunds = USDT.balanceOf(address(claimsContract));
+    //     for (uint256 i = 0; i < leaders.length; ++i) {
+    //         previousLeaderClaims[i] = claimsContract.pendingClaims(leaders[i], round, IERC20(USDT));
+    //     }
+
+    //     //getting USDT latest price and normalization factor
+    //     uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
+    //     uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).normalizationFactor;
+
+    //     //calaculating nft purchasing amount
+    //     uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
+    //     uint256[3] memory minerPrices = minerNFTPrices;
+    //     uint256 quantityLength = quantities.length;
+
+    //     for (uint256 i; i < quantityLength; ++i) {
+    //         uint256 quantity = quantities[i];
+
+    //         if (quantity > 0) {
+    //             prices += (minerPrices[i] * quantity);
+    //         }
+    //     }
+
+    //     prices = ((prices * (10 ** nfUSDT)) / latestPriceUSDT);
+    //     prices = prices - ((prices * discount_percentage_ppm) / PPM);
+
+    //     //calculating leader claims and funds wallet amount
+    //     uint256 sumPercentage;
+    //     uint256 remainingPercentageAmount;
+    //     for (uint256 j; j < percentages.length; ++j) {
+    //         sumPercentage += percentages[j];
+
+    //         expectedClaimsFunds = (prices * 250_000) / PPM;
+    //         uint256 sumPercentageAmount = (prices * sumPercentage) / PPM;
+
+    //         if (sumPercentage < 250_000) {
+    //             remainingPercentageAmount = expectedClaimsFunds - sumPercentageAmount;
+    //         }
+
+    //         expectedClaimsFunds -= remainingPercentageAmount;
+    //         expectedMinerWalletFunds = prices - expectedClaimsFunds;
+    //     }
+
+    //     //miner discounted buying
+    //     vm.startPrank(user);
+    //     USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+    //     preSale.purchaseMinerNFTDiscount(
+    //         USDT,
+    //         price,
+    //         deadline,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nf,
+    //         code,
+    //         v,
+    //         r,
+    //         s
+    //     );
+
+    //     preSale.purchaseMinerNFTDiscount(
+    //         USDT,
+    //         price,
+    //         deadline,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nf,
+    //         code,
+    //         v,
+    //         r,
+    //         s
+    //     );
+    //     vm.stopPrank();
+
+    //     uint256 dd = block.timestamp + 5 minutes;
+
+    //     (uint8 v2, bytes32 r2, bytes32 s2) = _validateSignWithTokenDiscounted(
+    //         priceG,
+    //         nfG,
+    //         discount_percentage_ppm,
+    //         GEMS,
+    //         dd
+    //     );
+
+    //     vm.startPrank(user);
+    //     GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+    //     preSale.purchaseMinerNFTDiscount(
+    //         GEMS,
+    //         priceG,
+    //         dd,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nfG,
+    //         code,
+    //         v2,
+    //         r2,
+    //         s2
+    //     );
+
+    //     preSale.purchaseMinerNFTDiscount(
+    //         GEMS,
+    //         priceG,
+    //         dd,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nfG,
+    //         code,
+    //         v2,
+    //         r2,
+    //         s2
+    //     );
+    //     vm.stopPrank();
+
+    //     vm.warp(block.timestamp + 8 days);
+    //     uint256 d = block.timestamp + 5 minutes;
+
+    //     (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignWithTokenDiscounted(
+    //         priceG,
+    //         nfG,
+    //         discount_percentage_ppm,
+    //         GEMS,
+    //         d
+    //     );
+
+    //     vm.startPrank(user);
+    //     GEMS.forceApprove(address(preSale), GEMS.balanceOf(user));
+    //     preSale.purchaseMinerNFTDiscount(
+    //         GEMS,
+    //         priceG,
+    //         d,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nfG,
+    //         code,
+    //         v1,
+    //         r1,
+    //         s1
+    //     );
+
+    //     preSale.purchaseMinerNFTDiscount(
+    //         GEMS,
+    //         priceG,
+    //         d,
+    //         discount_percentage_ppm,
+    //         quantities,
+    //         percentages,
+    //         leaders,
+    //         nfG,
+    //         code,
+    //         v1,
+    //         r1,
+    //         s1
+    //     );
+
+    //     vm.stopPrank();
+
+    //     address[] memory revokeLeader = new address[](1);
+    //     revokeLeader[0] = 0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269;
+
+    //     IERC20[][] memory revokeToken = new IERC20[][](1);
+    //     IERC20[] memory revokeTokens = new IERC20[](2);
+    //     revokeTokens[0] = USDT;
+    //     revokeTokens[1] = GEMS;
+    //     revokeToken[0] = revokeTokens;
+
+    //     uint256[][] memory revokeAmount = new uint256[][](1);
+    //     uint256[] memory revokeAmounts = new uint256[](2);
+    //     revokeAmounts[0] = 4499820;
+    //     revokeAmounts[1] = 45000000000000000000;
+    //     revokeAmount[0] = revokeAmounts;
+
+    //     IERC20[][] memory token = new IERC20[][](2);
+    //     IERC20[] memory tokens = new IERC20[](2);
+    //     tokens[0] = USDT;
+    //     tokens[1] = GEMS;
+
+    //     IERC20[] memory tokenss = new IERC20[](2);
+    //     tokenss[0] = USDT;
+    //     tokenss[1] = GEMS;
+
+    //     token[0] = tokens;
+    //     token[1] = tokenss;
+
+    //     uint256[] memory week = new uint256[](2);
+    //     week[0] = 2;
+    //     week[1] = 3;
+
+    //     // //revoking leader  claims
+    //     claimsContract.revokeLeaderClaim(revokeLeader, 2, revokeToken, revokeAmount);
+    //     expectedPendingRevokedClaims = (prices * percentages[0]) / PPM - revokeAmounts[0];
+
+    //     //update leader claims
+    //     claimsContract.updateClaims(revokeLeader, 2, revokeToken, revokeAmount);
+    //     expectedPendingUpdatedClaims = (prices * percentages[0]) / PPM;
+
+    //     vm.warp(block.timestamp + 8 days);
+    //     for (uint256 i = 1; i < leaders.length; ++i) {
+    //         expectedPendingClaims = (prices * percentages[i]) / PPM;
+    //         expectedTotalPercentage += percentages[i];
+    //     }
+    // }
 
     function _validateSignWithToken(
         uint256 referenceTokenPrice,

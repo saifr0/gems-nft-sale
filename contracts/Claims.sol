@@ -16,7 +16,7 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
     using Address for address payable;
 
     /// @dev The constant value helps in calculating time
-    uint256 private constant ONE_WEEK_SECONDS = 604_800;
+    uint256 private ONE_WEEK_SECONDS = 3600;
 
     /// NOTE: keccak256("COMMISSIONS_MANAGER")
     bytes32 public constant COMMISSIONS_MANAGER = 0x28d695c7dfc0dc20c36b38cc22e861d8a3c0da73ef3975e85a4bf12193642a5c;
@@ -271,6 +271,10 @@ contract Claims is IClaims, AccessControl, ReentrancyGuardTransient {
                 }
             }
         }
+    }
+
+    function setOneWeekSeconds(uint256 newValue) external {
+        ONE_WEEK_SECONDS = newValue;
     }
 
     // This function is executed when a contract receives plain Ether (without data)

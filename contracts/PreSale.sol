@@ -22,20 +22,20 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using Address for address payable;
 
-    /// @dev The maximum percentage of the leader's commissions
-    uint256 private constant CLAIMS_PERCENTAGE_PPM = 250_000;
-
     /// @dev The maximum discount percentage, applied to those purchasing with leader's code
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_0e6;
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
     /// @notice The maximum amount of money project hopes to raise
-    uint256 public constant MAX_CAP = 40_000_000e6;
+    uint256 public constant MAX_CAP = 40_000_0e6;
+
+    /// @dev The maximum percentage of the leader's commissions
+    uint256 public claimsPercentagePPM = 250_000;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
@@ -52,6 +52,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
     uint256 public accretionThreshold;
 
+    /// @notice The insurance fee in PPM
+    uint256 public insuranceFeePPM;
+
     /// @notice That buyEnabled or not
     bool public buyEnabled = true;
 
@@ -66,6 +69,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice The address of the miner funds wallet
     address public minerFundsWallet;
+
+    /// @notice The address of the insurance funds wallet
+    address public insuranceFundsWallet;
 
     /// @notice The price of the node nft
     uint256 public nodeNFTPrice;
@@ -91,6 +97,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Emitted when address of miner funds wallet is updated
     event MinerFundsWalletUpdated(address oldMinerFundsWallet, address newMinerFundsWallet);
 
+    /// @dev Emitted when address of insurance funds wallet is updated
+    event InsuranceFundsWalletUpdated(address oldInsuranceFundsWallet, address newInsuranceFundsWallet);
+
     /// @dev Emitted when blacklist access of address is updated
     event BlacklistUpdated(address which, bool accessNow);
 
@@ -109,6 +118,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Emitted when node price is updated
     event NodeNftPriceUpdated(uint256 oldPrice, uint256 newPrice);
 
+    /// @dev Emitted when insurance fee is updated
+    event InsuranceFeeUpdated(uint256 oldInsuranceFee, uint256 newInsuranceFee);
+
     /// @dev Emitted when node is purchased
     event NodeNftPurchased(IERC20 token, uint256 tokenPrice, address by, uint256 amountPurchased, uint256 quantity);
 
@@ -119,7 +131,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         address by,
         uint256[3] minerPrices,
         uint256[3] quantities,
-        uint256 amountPurchased
+        uint256 amountPurchased,
+        bool isInsured
     );
 
     /// @dev Emitted when miner is purchased on discounted price
@@ -133,7 +146,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 amountPurchased,
         address[] leaders,
         uint256[] percentages,
-        uint256 discountPercentage
+        uint256 discountPercentage,
+        bool isInsured
     );
 
     /// @notice Thrown when address is blacklisted
@@ -181,6 +195,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Constructor
     /// @param nodeFundsWalletAddress The address of node funds wallet
     /// @param minerFundsWalletAddress The address of miner funds wallet
+    /// @param insuranceFundsWalletAddress The address of insurance funds wallet
     /// @param signerAddress The address of signer wallet
     /// @param owner The address of owner wallet
     /// @param claimsAddress The address of claim contract
@@ -191,10 +206,12 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param prevAccretionThreshold The previous raised amount to check price accretion
     /// @param prevTotalRaised The previous raised amount
     /// @param priceAccretionPercentagePPMInit The price accretion percentage value, it can be zero
+    /// @param insuranceFeePPMInit The insurance fee
     /// @param minerNftPricesInit The prices of miner nfts
     constructor(
         address nodeFundsWalletAddress,
         address minerFundsWalletAddress,
+        address insuranceFundsWalletAddress,
         address signerAddress,
         address owner,
         IClaims claimsAddress,
@@ -205,18 +222,20 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 prevAccretionThreshold,
         uint256 prevTotalRaised,
         uint256 priceAccretionPercentagePPMInit,
+        uint256 insuranceFeePPMInit,
         uint256[3] memory minerNftPricesInit
     )
         Ownable(owner)
         checkAddressZero(nodeFundsWalletAddress)
         checkAddressZero(minerFundsWalletAddress)
+        checkAddressZero(insuranceFundsWalletAddress)
         checkAddressZero(signerAddress)
         checkAddressZero(address(claimsAddress))
         checkAddressZero(address(minerNftAddress))
         checkAddressZero(address(nodeNftAddress))
         checkAddressZero(address(tokenRegistryAddress))
     {
-        if (nodeNftPriceInit == 0) {
+        if (nodeNftPriceInit == 0 || insuranceFeePPMInit == 0) {
             revert ZeroValue();
         }
 
@@ -228,6 +247,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         nodeFundsWallet = nodeFundsWalletAddress;
         minerFundsWallet = minerFundsWalletAddress;
+        insuranceFundsWallet = insuranceFundsWalletAddress;
         signerWallet = signerAddress;
         claimsContract = claimsAddress;
         minerNft = minerNftAddress;
@@ -237,6 +257,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         priceAccretionPercentagePPM = priceAccretionPercentagePPMInit;
         minerNFTPrices = minerNftPricesInit;
         accretionThreshold = prevAccretionThreshold;
+        insuranceFeePPM = insuranceFeePPMInit;
         totalRaised = prevTotalRaised;
     }
 
@@ -274,6 +295,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         );
 
         uint256 purchaseAmount = (quantity * nodeNFTPrice * (10 ** normalizationFactor)) / latestPrice;
+
         _checkZeroValue(purchaseAmount);
 
         if (token == ETH) {
@@ -303,6 +325,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param deadline The deadline is validity of the signature
     /// @param quantities The amount of each miner that you want to purchase
     /// @param referenceNormalizationFactor The normalization factor
+    /// @param isInsured The normalization factor
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
@@ -312,6 +335,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 deadline,
         uint256[3] calldata quantities,
         uint8 referenceNormalizationFactor,
+        bool isInsured,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -326,21 +350,29 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         uint256[3] memory minerPrices = minerNFTPrices;
 
-        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(
+        (uint256 purchaseAmount, uint256 latestPrice, uint256 insuranceAmount) = _processPurchase(
             token,
             referenceTokenPrice,
             0,
             quantities,
-            referenceNormalizationFactor
+            referenceNormalizationFactor,
+            isInsured
         );
+        purchaseAmount -= insuranceAmount;
 
         if (token == ETH) {
+            if (isInsured) {
+                payable(insuranceFundsWallet).sendValue(insuranceAmount);
+            }
             payable(minerFundsWallet).sendValue(purchaseAmount);
 
             if (msg.value > purchaseAmount) {
                 payable(msg.sender).sendValue(msg.value - purchaseAmount);
             }
         } else {
+            if (isInsured) {
+                token.safeTransferFrom(msg.sender, insuranceFundsWallet, insuranceAmount);
+            }
             token.safeTransferFrom(msg.sender, minerFundsWallet, purchaseAmount);
         }
 
@@ -350,7 +382,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             by: msg.sender,
             minerPrices: minerPrices,
             quantities: quantities,
-            amountPurchased: purchaseAmount
+            amountPurchased: purchaseAmount,
+            isInsured: isInsured
         });
     }
 
@@ -363,6 +396,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param percentages The leader's percentages
     /// @param leaders The addresses of the leaders
     /// @param referenceNormalizationFactor The normalization factor
+    /// @param isInsured The normalization factor
     /// @param code The code is used to verify signature of the user
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
@@ -376,6 +410,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[] calldata percentages,
         address[] calldata leaders,
         uint8 referenceNormalizationFactor,
+        bool isInsured,
         string memory code,
         uint8 v,
         bytes32 r,
@@ -403,15 +438,17 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
         uint256[3] memory minerPrices = minerNFTPrices;
 
-        (uint256 purchaseAmount, uint256 latestPrice) = _processPurchase(
+        (uint256 purchaseAmount, uint256 latestPrice, uint256 insuranceAmount) = _processPurchase(
             token,
             referenceTokenPrice,
             discountPercentagePPM,
             quantities,
-            referenceNormalizationFactor
+            referenceNormalizationFactor,
+            isInsured
         );
+        purchaseAmount -= insuranceAmount;
 
-        _transferAndUpdateCommissions(token, purchaseAmount, leaders, percentages);
+        _transferAndUpdateCommissions(token, purchaseAmount, leaders, percentages, insuranceAmount, isInsured);
 
         emit MinerNftPurchasedDiscounted({
             token: token,
@@ -423,7 +460,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             amountPurchased: purchaseAmount,
             leaders: leaders,
             percentages: percentages,
-            discountPercentage: discountPercentagePPM
+            discountPercentage: discountPercentagePPM,
+            isInsured: isInsured
         });
     }
 
@@ -433,8 +471,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256 referenceTokenPrice,
         uint256 discountPercentagePPM,
         uint256[3] calldata quantities,
-        uint8 referenceNormalizationFactor
-    ) private returns (uint256, uint256) {
+        uint8 referenceNormalizationFactor,
+        bool isInsured
+    ) private returns (uint256, uint256, uint256) {
         (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(
             token,
             referenceTokenPrice,
@@ -442,6 +481,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         );
 
         uint256 prices;
+        uint256 insuranceAmount;
         uint256 quantityLength = quantities.length;
         uint256[3] memory minerPrices = minerNFTPrices;
 
@@ -454,6 +494,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
+        if (isInsured) {
+            insuranceAmount = (prices * insuranceFeePPM) / PPM;
+        }
+
         _checkZeroValue(prices);
 
         if (discountPercentagePPM != 0) {
@@ -463,6 +507,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
             prices -= (prices * discountPercentagePPM) / PPM;
         }
+        prices += insuranceAmount;
 
         totalRaised += prices;
 
@@ -483,7 +528,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        return ((prices * (10 ** normalizationFactor)) / latestPrice, latestPrice);
+        return ((prices * (10 ** normalizationFactor)) / latestPrice, latestPrice, insuranceAmount);
     }
 
     /// @notice Changes token registry contract address
@@ -578,6 +623,25 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         minerFundsWallet = newMinerFundsWallet;
     }
 
+    /// @notice Changes miner funds wallet address
+    /// @param newInsuranceFundsWallet The address of the new insurance funds wallet
+    function updateInsuranceFundsWallet(
+        address newInsuranceFundsWallet
+    ) external checkAddressZero(newInsuranceFundsWallet) onlyOwner {
+        address oldInsuranceFundsWallet = insuranceFundsWallet;
+
+        if (oldInsuranceFundsWallet == newInsuranceFundsWallet) {
+            revert IdenticalValue();
+        }
+
+        emit InsuranceFundsWalletUpdated({
+            oldInsuranceFundsWallet: oldInsuranceFundsWallet,
+            newInsuranceFundsWallet: newInsuranceFundsWallet
+        });
+
+        insuranceFundsWallet = newInsuranceFundsWallet;
+    }
+
     /// @notice Changes the access of any address in contract interaction
     /// @param which The address for which access is updated
     /// @param access The access decision of `which` address
@@ -609,6 +673,24 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         emit NodeNftPriceUpdated({ oldPrice: oldPrice, newPrice: newPrice });
 
         nodeNFTPrice = newPrice;
+    }
+
+    /// @notice Changes the insurance
+    /// @param newInsuranceFee The new Insurance fee
+    function updateInsuranceFee(uint256 newInsuranceFee) external onlyOwner {
+        uint256 oldInsuranceFee = insuranceFeePPM;
+
+        if (newInsuranceFee == oldInsuranceFee) {
+            revert IdenticalValue();
+        }
+
+        if (newInsuranceFee == 0) {
+            revert ZeroValue();
+        }
+
+        emit InsuranceFeeUpdated({ oldInsuranceFee: oldInsuranceFee, newInsuranceFee: newInsuranceFee });
+
+        insuranceFeePPM = newInsuranceFee;
     }
 
     /// @notice Updates the status of the tokens for purchases
@@ -710,7 +792,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         IERC20 token,
         uint256 amount,
         address[] calldata leaders,
-        uint256[] calldata percentages
+        uint256[] calldata percentages,
+        uint256 insuranceAmount,
+        bool isInsured
     ) private {
         uint256 toLength = leaders.length;
 
@@ -739,21 +823,32 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
 
-        if (sumPercentage > CLAIMS_PERCENTAGE_PPM) {
+        if (isInsured) {
+            claimsPercentagePPM = 200_000;
+        }
+        if (sumPercentage > claimsPercentagePPM) {
             revert InvalidPercentage();
         }
 
         uint256 equivalence = (amount * sumPercentage) / PPM;
+
         amount -= equivalence;
 
         if (token == ETH) {
+            if (isInsured) {
+                payable(insuranceFundsWallet).sendValue(insuranceAmount);
+            }
             payable(minerFundsWallet).sendValue(amount);
             payable(address(claimsContract)).sendValue(equivalence);
 
-            if (msg.value > amount + equivalence) {
+            if (msg.value > (amount + equivalence + insuranceAmount)) {
                 payable(msg.sender).sendValue(msg.value - (amount + equivalence));
             }
         } else {
+            if (isInsured) {
+                token.safeTransferFrom(msg.sender, insuranceFundsWallet, insuranceAmount);
+            }
+
             token.safeTransferFrom(msg.sender, minerFundsWallet, amount);
             token.safeTransferFrom(msg.sender, address(claimsContract), equivalence);
         }
