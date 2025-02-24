@@ -342,7 +342,16 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     ) external payable canBuy(token, deadline) nonReentrant {
         // The input must have been signed by the presale signer
         _verifySignature(
-            keccak256(abi.encodePacked(msg.sender, referenceNormalizationFactor, referenceTokenPrice, deadline, token)),
+            keccak256(
+                abi.encodePacked(
+                    msg.sender,
+                    referenceNormalizationFactor,
+                    referenceTokenPrice,
+                    deadline,
+                    token,
+                    isInsured
+                )
+            ),
             v,
             r,
             s
@@ -358,7 +367,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             referenceNormalizationFactor,
             isInsured
         );
-        purchaseAmount -= insuranceAmount;
 
         if (token == ETH) {
             if (isInsured) {
@@ -367,7 +375,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             payable(minerFundsWallet).sendValue(purchaseAmount);
 
             if (msg.value > purchaseAmount) {
-                payable(msg.sender).sendValue(msg.value - purchaseAmount);
+                payable(msg.sender).sendValue(msg.value - (purchaseAmount + insuranceAmount));
             }
         } else {
             if (isInsured) {
@@ -428,7 +436,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
                     referenceNormalizationFactor,
                     referenceTokenPrice,
                     deadline,
-                    token
+                    token,
+                    isInsured
                 )
             ),
             v,
@@ -446,7 +455,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             referenceNormalizationFactor,
             isInsured
         );
-        purchaseAmount -= insuranceAmount;
 
         _transferAndUpdateCommissions(token, purchaseAmount, leaders, percentages, insuranceAmount, isInsured);
 
@@ -507,7 +515,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
 
             prices -= (prices * discountPercentagePPM) / PPM;
         }
-        prices += insuranceAmount;
 
         totalRaised += prices;
 
@@ -528,7 +535,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        return ((prices * (10 ** normalizationFactor)) / latestPrice, latestPrice, insuranceAmount);
+        return (
+            (prices * (10 ** normalizationFactor)) / latestPrice,
+            latestPrice,
+            (insuranceAmount * (10 ** normalizationFactor)) / latestPrice
+        );
     }
 
     /// @notice Changes token registry contract address

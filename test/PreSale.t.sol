@@ -318,9 +318,10 @@ contract PreSaleTest is Test {
         uint256 deadline = block.timestamp;
         uint256 price = 0;
         uint8 nf = 0;
+        bool isInsured = true;
 
         //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline, isInsured);
 
         //getting USDT latest price and normalization factor
         uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(USDT)).latestPrice;
@@ -344,7 +345,7 @@ contract PreSaleTest is Test {
         //miner buying
         vm.startPrank(user);
         USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        preSale.purchaseMinerNFT(USDT, price, deadline, quantities, nf, false, v, r, s);
+        preSale.purchaseMinerNFT(USDT, price, deadline, quantities, nf, true, v, r, s);
         vm.stopPrank();
 
         // //miner and user walllet balance assertion
@@ -544,6 +545,7 @@ contract PreSaleTest is Test {
         uint256 discount_percentage_ppm = 100_000;
         uint256 price = 0;
         uint8 nf = 0;
+        bool isInsured = true;
 
         //sign
         (uint8 v, bytes32 r, bytes32 s) = _validateSignWithTokenDiscounted(
@@ -551,7 +553,8 @@ contract PreSaleTest is Test {
             nf,
             discount_percentage_ppm,
             USDT,
-            deadline
+            deadline,
+            isInsured
         );
 
         uint256 leaderPercentageAmount = (percentages[0]) +
@@ -1161,11 +1164,21 @@ contract PreSaleTest is Test {
         uint256 referenceTokenPrice,
         uint256 normalizationFactor,
         IERC20 token,
-        uint256 deadline
+        uint256 deadline,
+        bool isInsured
     ) private returns (uint8, bytes32, bytes32) {
         vm.startPrank(signer);
         bytes32 msgHash = (
-            keccak256(abi.encodePacked(user, uint8(normalizationFactor), uint256(referenceTokenPrice), deadline, token))
+            keccak256(
+                abi.encodePacked(
+                    user,
+                    uint8(normalizationFactor),
+                    uint256(referenceTokenPrice),
+                    deadline,
+                    token,
+                    isInsured
+                )
+            )
         ).toEthSignedMessageHash();
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
         vm.stopPrank();
@@ -1177,7 +1190,8 @@ contract PreSaleTest is Test {
         uint256 normalizationFactor,
         uint256 discount_percentage_ppm,
         IERC20 token,
-        uint256 deadline
+        uint256 deadline,
+        bool isInsured
     ) private returns (uint8, bytes32, bytes32) {
         vm.startPrank(signer);
         bytes32 msgHash = (
@@ -1191,7 +1205,8 @@ contract PreSaleTest is Test {
                     uint8(normalizationFactor),
                     uint256(referenceTokenPrice),
                     deadline,
-                    token
+                    token,
+                    isInsured
                 )
             )
         ).toEthSignedMessageHash();

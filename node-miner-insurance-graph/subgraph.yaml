@@ -1,71 +1,116 @@
 specVersion: 1.0.0
 indexerHints:
-  prune: auto
+    prune: auto
 schema:
-  file: ./schema.graphql
+    file: ./schema.graphql
 dataSources:
-  - kind: ethereum
-    name: PreSale
-    network: sepolia
-    source:
-      address: "0x0c140fED346082E41BE00132ab269e7512073EaF"
-      abi: PreSale
-      startBlock: 7775695
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.7
-      language: wasm/assemblyscript
-      entities:
-        - AllowedTokenUpdated
-        - BlacklistUpdated
-        - BuyEnableUpdated
-        - InsuranceFeeUpdated
-        - InsuranceFundsWalletUpdated
-        - MinerFundsWalletUpdated
-        - MinerNftPurchased
-        - MinerNftPurchasedDiscounted
-        - NodeFundsWalletUpdated
-        - NodeNftPriceUpdated
-        - NodeNftPurchased
-        - OwnershipTransferStarted
-        - OwnershipTransferred
-        - PriceAccretionPercentageUpdated
-        - SignerUpdated
-        - TokenRegistryUpdated
-      abis:
-        - name: PreSale
-          file: ./abis/PreSale.json
-      eventHandlers:
-        - event: AllowedTokenUpdated(address,bool)
-          handler: handleAllowedTokenUpdated
-        - event: BlacklistUpdated(address,bool)
-          handler: handleBlacklistUpdated
-        - event: BuyEnableUpdated(bool,bool)
-          handler: handleBuyEnableUpdated
-        - event: InsuranceFeeUpdated(uint256,uint256)
-          handler: handleInsuranceFeeUpdated
-        - event: InsuranceFundsWalletUpdated(address,address)
-          handler: handleInsuranceFundsWalletUpdated
-        - event: MinerFundsWalletUpdated(address,address)
-          handler: handleMinerFundsWalletUpdated
-        - event: MinerNftPurchased(address,uint256,address,uint256[3],uint256[3],uint256,bool)
-          handler: handleMinerNftPurchased
-        - event: MinerNftPurchasedDiscounted(address,uint256,indexed address,uint256[3],uint256[3],string,uint256,address[],uint256[],uint256,bool)
-          handler: handleMinerNftPurchasedDiscounted
-        - event: NodeFundsWalletUpdated(address,address)
-          handler: handleNodeFundsWalletUpdated
-        - event: NodeNftPriceUpdated(uint256,uint256)
-          handler: handleNodeNftPriceUpdated
-        - event: NodeNftPurchased(address,uint256,address,uint256,uint256)
-          handler: handleNodeNftPurchased
-        - event: OwnershipTransferStarted(indexed address,indexed address)
-          handler: handleOwnershipTransferStarted
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
-        - event: PriceAccretionPercentageUpdated(uint256,uint256)
-          handler: handlePriceAccretionPercentageUpdated
-        - event: SignerUpdated(address,address)
-          handler: handleSignerUpdated
-        - event: TokenRegistryUpdated(address,address)
-          handler: handleTokenRegistryUpdated
-      file: ./src/pre-sale.ts
+    - kind: ethereum
+      name: PreSale
+      network: sepolia
+      source:
+          address: '0xd44d58b24d8257d202a6203497f00e60c1dde1a5'
+          abi: PreSale
+          startBlock: 7775898
+      mapping:
+          kind: ethereum/events
+          apiVersion: 0.0.7
+          language: wasm/assemblyscript
+          entities:
+              - AllowedTokenUpdated
+              - BlacklistUpdated
+              - BuyEnableUpdated
+              - InsuranceFeeUpdated
+              - InsuranceFundsWalletUpdated
+              - MinerFundsWalletUpdated
+              - MinerNftPurchased
+              - MinerNftPurchasedDiscounted
+              - NodeFundsWalletUpdated
+              - NodeNftPriceUpdated
+              - NodeNftPurchased
+              - OwnershipTransferStarted
+              - OwnershipTransferred
+              - PriceAccretionPercentageUpdated
+              - SignerUpdated
+              - TokenRegistryUpdated
+          abis:
+              - name: PreSale
+                file: ./abis/PreSale.json
+          eventHandlers:
+              - event: AllowedTokenUpdated(address,bool)
+                handler: handleAllowedTokenUpdated
+              - event: BlacklistUpdated(address,bool)
+                handler: handleBlacklistUpdated
+              - event: BuyEnableUpdated(bool,bool)
+                handler: handleBuyEnableUpdated
+              - event: InsuranceFeeUpdated(uint256,uint256)
+                handler: handleInsuranceFeeUpdated
+              - event: InsuranceFundsWalletUpdated(address,address)
+                handler: handleInsuranceFundsWalletUpdated
+              - event: MinerFundsWalletUpdated(address,address)
+                handler: handleMinerFundsWalletUpdated
+              - event: MinerNftPurchased(address,uint256,address,uint256[3],uint256[3],uint256,bool)
+                handler: handleMinerNftPurchased
+              - event: MinerNftPurchasedDiscounted(address,uint256,indexed
+                    address,uint256[3],uint256[3],string,uint256,address[],uint256[],uint256,bool)
+                handler: handleMinerNftPurchasedDiscounted
+              - event: NodeFundsWalletUpdated(address,address)
+                handler: handleNodeFundsWalletUpdated
+              - event: NodeNftPriceUpdated(uint256,uint256)
+                handler: handleNodeNftPriceUpdated
+              - event: NodeNftPurchased(address,uint256,address,uint256,uint256)
+                handler: handleNodeNftPurchased
+              - event: OwnershipTransferStarted(indexed address,indexed address)
+                handler: handleOwnershipTransferStarted
+              - event: OwnershipTransferred(indexed address,indexed address)
+                handler: handleOwnershipTransferred
+              - event: PriceAccretionPercentageUpdated(uint256,uint256)
+                handler: handlePriceAccretionPercentageUpdated
+              - event: SignerUpdated(address,address)
+                handler: handleSignerUpdated
+              - event: TokenRegistryUpdated(address,address)
+                handler: handleTokenRegistryUpdated
+          file: ./src/pre-sale.ts
+    - kind: ethereum
+      name: Claims
+      network: sepolia
+      source:
+          address: '0x8d66b877c8e9486e6e72bc05c18c798cbda90161'
+          abi: Claims
+          startBlock: 7775891
+      mapping:
+          kind: ethereum/events
+          apiVersion: 0.0.7
+          language: wasm/assemblyscript
+          entities:
+              - ClaimRevoked
+              - ClaimSet
+              - ClaimsUpdated
+              - FundsClaimed
+              - FundsWalletUpdated
+              - PresaleUpdated
+              - RoleAdminChanged
+              - RoleGranted
+              - RoleRevoked
+          abis:
+              - name: Claims
+                file: ./abis/Claims.json
+          eventHandlers:
+              - event: ClaimRevoked(address,address,uint256)
+                handler: handleClaimRevoked
+              - event: ClaimSet(indexed address,indexed uint256,uint256,(address,uint256))
+                handler: handleClaimSet
+              - event: ClaimsUpdated(address,address,uint256)
+                handler: handleClaimsUpdated
+              - event: FundsClaimed(indexed address,address,indexed uint256,uint256)
+                handler: handleFundsClaimed
+              - event: FundsWalletUpdated(address,address)
+                handler: handleFundsWalletUpdated
+              - event: PresaleUpdated(address,address)
+                handler: handlePresaleUpdated
+              - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+                handler: handleRoleAdminChanged
+              - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+                handler: handleRoleGranted
+              - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+                handler: handleRoleRevoked
+          file: ./src/claims.ts

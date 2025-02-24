@@ -70,50 +70,50 @@ async function main() {
     // return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740402849]);
+    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740405497]);
     // console.log('Deploying Claims...');
     // await Claims.waitForDeployment();
     // console.log('Claims deployed to---------', Claims.target);
     // await new Promise((resolve) => setTimeout(resolve, 30000));
-    // verify(Claims.target, [owner, lastWeek, 1740402849]);
+    // verify(Claims.target, [owner, lastWeek, 1740405497]);
     // console.log('Claims Verified');
     // return;
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
 
-    // const PreSale = await hre.ethers.deployContract('PreSale', [
-    //     nodeFundsWallet,
-    //     minerFundsWallet,
-    //     insuranceFundsWallet,
-    //     signerAddress,
-    //     owner,
-    //     '0x0Cd7fd3E68C14576Ce13EfCcbA23679aA7a781f7',
-    //     minerNftContractAddress,
-    //     nodeNftContractAddress,
-    //     tokenRegistryAddress,
-    //     nodesNFTPriceInit,
-    //     0,
-    //     0,
-    //     priceAccretionPercentagePPMInit,
-    //     20000,
-    //     minersNFTPriceInit
-    // ]);
-
-    // console.log('Deploying PreSale...');
-
-    // await PreSale.waitForDeployment();
-
-    // console.log('PreSale deployed to--------', PreSale.target);
-
-    // await new Promise((resolve) => setTimeout(resolve, 30000));
-
-    verify('0x0c140fED346082E41BE00132ab269e7512073EaF', [
+    const PreSale = await hre.ethers.deployContract('PreSale', [
         nodeFundsWallet,
         minerFundsWallet,
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x0Cd7fd3E68C14576Ce13EfCcbA23679aA7a781f7',
+        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
+        minerNftContractAddress,
+        nodeNftContractAddress,
+        tokenRegistryAddress,
+        nodesNFTPriceInit,
+        0,
+        0,
+        priceAccretionPercentagePPMInit,
+        20000,
+        minersNFTPriceInit
+    ]);
+
+    console.log('Deploying PreSale...');
+
+    await PreSale.waitForDeployment();
+
+    console.log('PreSale deployed to--------', PreSale.target);
+
+    await new Promise((resolve) => setTimeout(resolve, 30000));
+
+    verify(PreSale.target, [
+        nodeFundsWallet,
+        minerFundsWallet,
+        insuranceFundsWallet,
+        signerAddress,
+        owner,
+        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,
