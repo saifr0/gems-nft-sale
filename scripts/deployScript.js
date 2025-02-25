@@ -70,12 +70,12 @@ async function main() {
     // return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740405497]);
+    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740474333]);
     // console.log('Deploying Claims...');
     // await Claims.waitForDeployment();
     // console.log('Claims deployed to---------', Claims.target);
     // await new Promise((resolve) => setTimeout(resolve, 30000));
-    // verify(Claims.target, [owner, lastWeek, 1740405497]);
+    // verify(Claims.target, [owner, lastWeek, 1740474333]);
     // console.log('Claims Verified');
     // return;
 
@@ -87,7 +87,7 @@ async function main() {
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
+        '0xA83EBc230185C582FD2E161E9dfF53a6816C1CfC',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,
@@ -113,7 +113,7 @@ async function main() {
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
+        '0xA83EBc230185C582FD2E161E9dfF53a6816C1CfC',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,

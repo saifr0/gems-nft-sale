@@ -8,9 +8,9 @@ dataSources:
       name: PreSale
       network: sepolia
       source:
-          address: '0xd44d58b24d8257d202a6203497f00e60c1dde1a5'
+          address: '0xecf96830bc556b7b1d9c38b286ee12aa822ea299'
           abi: PreSale
-          startBlock: 7775898
+          startBlock: 7781422
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
@@ -74,9 +74,9 @@ dataSources:
       name: Claims
       network: sepolia
       source:
-          address: '0x8d66b877c8e9486e6e72bc05c18c798cbda90161'
+          address: '0xa83ebc230185c582fd2e161e9dff53a6816c1cfc'
           abi: Claims
-          startBlock: 7775891
+          startBlock: 7781415
       mapping:
           kind: ethereum/events
           apiVersion: 0.0.7
