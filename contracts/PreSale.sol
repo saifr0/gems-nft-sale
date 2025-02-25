@@ -34,8 +34,11 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The maximum amount of money project hopes to raise
     uint256 public constant MAX_CAP = 40_000_0e6;
 
-    /// @dev The maximum percentage of the leader's commissions
-    uint256 public claimsPercentagePPM = 250_000;
+    /// @notice The maximum percentage of the leader's commissions
+    uint256 public constant claimsPercentagePPM = 250_000;
+
+    /// @notice The maximum percentage of the leader's commissions in case of insurance
+    uint256 public constant insuredClaimsPercentagePPM = 200_000;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
@@ -358,7 +361,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         );
 
         uint256[3] memory minerPrices = minerNFTPrices;
-
         (uint256 purchaseAmount, uint256 latestPrice, uint256 insuranceAmount) = _processPurchase(
             token,
             referenceTokenPrice,
@@ -374,7 +376,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
             payable(minerFundsWallet).sendValue(purchaseAmount);
 
-            if (msg.value > purchaseAmount) {
+            if (msg.value > (purchaseAmount + insuranceAmount)) {
                 payable(msg.sender).sendValue(msg.value - (purchaseAmount + insuranceAmount));
             }
         } else {
@@ -446,7 +448,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         );
 
         uint256[3] memory minerPrices = minerNFTPrices;
-
         (uint256 purchaseAmount, uint256 latestPrice, uint256 insuranceAmount) = _processPurchase(
             token,
             referenceTokenPrice,
@@ -834,26 +835,23 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
 
-        if (isInsured) {
-            claimsPercentagePPM = 200_000;
-        }
-        if (sumPercentage > claimsPercentagePPM) {
+        if (sumPercentage > (isInsured ? insuredClaimsPercentagePPM : claimsPercentagePPM)) {
             revert InvalidPercentage();
         }
 
         uint256 equivalence = (amount * sumPercentage) / PPM;
-
         amount -= equivalence;
 
         if (token == ETH) {
             if (isInsured) {
                 payable(insuranceFundsWallet).sendValue(insuranceAmount);
             }
+
             payable(minerFundsWallet).sendValue(amount);
             payable(address(claimsContract)).sendValue(equivalence);
 
             if (msg.value > (amount + equivalence + insuranceAmount)) {
-                payable(msg.sender).sendValue(msg.value - (amount + equivalence));
+                payable(msg.sender).sendValue(msg.value - (amount + equivalence + insuranceAmount));
             }
         } else {
             if (isInsured) {
