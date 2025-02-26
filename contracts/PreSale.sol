@@ -37,9 +37,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The maximum percentage of the leader's commissions
     uint256 public constant CLAIMS_PERCENTAGE_PPM = 250_000;
 
-    /// @notice The maximum percentage of the leader's commissions in case of insurance
-    uint256 public constant INSURED_CLAIMS_PERCENTAGE_PPM = 200_000;
-
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
 
@@ -392,7 +389,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             by: msg.sender,
             minerPrices: minerPrices,
             quantities: quantities,
-            amountPurchased: purchaseAmount,
+            amountPurchased: purchaseAmount + insuranceAmount,
             isInsured: isInsured
         });
     }
@@ -466,7 +463,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             minerPrices: minerPrices,
             quantities: quantities,
             code: code,
-            amountPurchased: purchaseAmount,
+            amountPurchased: purchaseAmount + insuranceAmount,
             leaders: leaders,
             percentages: percentages,
             discountPercentage: discountPercentagePPM,
@@ -835,7 +832,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
 
-        if (sumPercentage > (isInsured ? INSURED_CLAIMS_PERCENTAGE_PPM : CLAIMS_PERCENTAGE_PPM)) {
+        if (sumPercentage > CLAIMS_PERCENTAGE_PPM) {
             revert InvalidPercentage();
         }
 

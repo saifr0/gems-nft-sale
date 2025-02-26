@@ -24,8 +24,8 @@ async function main() {
     const gemsAddress = '0x7Ddd14E3a173A5Db7bB8fd74b82b667F221492B9';
     const usdtAddress = '0x6fEA2f1b82aFC40030520a6C49B0d3b652A65915';
     const claimsContractAddress = '';
-    const minerNftContractAddress = '0x873C2AAd39f94D833aF2e985858C4Ac08aF9BAB0';
-    const nodeNftContractAddress = '0xE42559FDd11306b39fF62590Ed3BDC859705A80A';
+    const minerNftContractAddress = '0xb4A88d32F39d36Df559d85677536150866923669';
+    const nodeNftContractAddress = '0x6CCEeEe88d6e59C5D0C10b8D875aa23859BEc82D';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
     const priceAccretionPercentagePPMInit = '20000';
     const nodesNFTPriceInit = '99000000';
@@ -67,7 +67,6 @@ async function main() {
     // await new Promise((resolve) => setTimeout(resolve, 30000));
     // verify(NodeNft.target, [owner, nodeNFTUri]);
     // console.log('NodeNft Verified');
-    // return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
     // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740474333]);
@@ -81,13 +80,39 @@ async function main() {
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
 
-    const PreSale = await hre.ethers.deployContract('PreSale', [
+    // const PreSale = await hre.ethers.deployContract('PreSale', [
+    //     nodeFundsWallet,
+    //     minerFundsWallet,
+    //     insuranceFundsWallet,
+    //     signerAddress,
+    //     owner,
+    //     '0x57E1BD3944027a6a89F4EC42A91225815D0311Bb',
+    //     minerNftContractAddress,
+    //     nodeNftContractAddress,
+    //     tokenRegistryAddress,
+    //     nodesNFTPriceInit,
+    //     0,
+    //     0,
+    //     priceAccretionPercentagePPMInit,
+    //     20000,
+    //     minersNFTPriceInit
+    // ]);
+
+    // console.log('Deploying PreSale...');
+
+    // await PreSale.waitForDeployment();
+
+    // console.log('PreSale deployed to--------', PreSale.target);
+
+    // await new Promise((resolve) => setTimeout(resolve, 30000));
+
+    verify('0xE16C8F8509441C81e0AdD4172E64a19Fad4f2e34', [
         nodeFundsWallet,
         minerFundsWallet,
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0xA83EBc230185C582FD2E161E9dfF53a6816C1CfC',
+        '0x57E1BD3944027a6a89F4EC42A91225815D0311Bb',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,
@@ -95,33 +120,7 @@ async function main() {
         0,
         0,
         priceAccretionPercentagePPMInit,
-        20000,
-        minersNFTPriceInit
-    ]);
-
-    console.log('Deploying PreSale...');
-
-    await PreSale.waitForDeployment();
-
-    console.log('PreSale deployed to--------', PreSale.target);
-
-    await new Promise((resolve) => setTimeout(resolve, 30000));
-
-    verify(PreSale.target, [
-        nodeFundsWallet,
-        minerFundsWallet,
-        insuranceFundsWallet,
-        signerAddress,
-        owner,
-        '0xA83EBc230185C582FD2E161E9dfF53a6816C1CfC',
-        minerNftContractAddress,
-        nodeNftContractAddress,
-        tokenRegistryAddress,
-        nodesNFTPriceInit,
-        0,
-        0,
-        priceAccretionPercentagePPMInit,
-        20000,
+        50000,
         minersNFTPriceInit
     ]);
 
