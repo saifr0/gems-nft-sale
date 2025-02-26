@@ -289,6 +289,12 @@
         "internalType": "bool",
         "name": "isInsured",
         "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "insuranceAmount",
+        "type": "uint256"
       }
     ],
     "name": "MinerNftPurchased",
@@ -362,6 +368,12 @@
         "internalType": "bool",
         "name": "isInsured",
         "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "insuranceAmount",
+        "type": "uint256"
       }
     ],
     "name": "MinerNftPurchasedDiscounted",
@@ -539,6 +551,13 @@
   },
   {
     "inputs": [],
+    "name": "CLAIMS_PERCENTAGE_PPM",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "MAX_CAP",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -596,13 +615,6 @@
     "outputs": [
       { "internalType": "contract IClaims", "name": "", "type": "address" }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "claimsPercentagePPM",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },

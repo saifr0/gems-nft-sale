@@ -132,7 +132,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[3] minerPrices,
         uint256[3] quantities,
         uint256 amountPurchased,
-        bool isInsured
+        bool isInsured,
+        uint256 insuranceAmount
     );
 
     /// @dev Emitted when miner is purchased on discounted price
@@ -147,7 +148,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         address[] leaders,
         uint256[] percentages,
         uint256 discountPercentage,
-        bool isInsured
+        bool isInsured,
+        uint256 insuranceAmount
     );
 
     /// @notice Thrown when address is blacklisted
@@ -389,8 +391,9 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             by: msg.sender,
             minerPrices: minerPrices,
             quantities: quantities,
-            amountPurchased: purchaseAmount + insuranceAmount,
-            isInsured: isInsured
+            amountPurchased: purchaseAmount,
+            isInsured: isInsured,
+            insuranceAmount: insuranceAmount
         });
     }
 
@@ -463,11 +466,12 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             minerPrices: minerPrices,
             quantities: quantities,
             code: code,
-            amountPurchased: purchaseAmount + insuranceAmount,
+            amountPurchased: purchaseAmount,
             leaders: leaders,
             percentages: percentages,
             discountPercentage: discountPercentagePPM,
-            isInsured: isInsured
+            isInsured: isInsured,
+            insuranceAmount: insuranceAmount
         });
     }
 
