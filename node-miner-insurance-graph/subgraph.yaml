@@ -50,7 +50,8 @@ dataSources:
           handler: handleMinerFundsWalletUpdated
         - event: MinerNftPurchased(address,uint256,address,uint256[3],uint256[3],uint256,bool,uint256)
           handler: handleMinerNftPurchased
-        - event: MinerNftPurchasedDiscounted(address,uint256,indexed address,uint256[3],uint256[3],string,uint256,address[],uint256[],uint256,bool,uint256)
+        - event: MinerNftPurchasedDiscounted(address,uint256,indexed
+            address,uint256[3],uint256[3],string,uint256,address[],uint256[],uint256,bool,uint256)
           handler: handleMinerNftPurchasedDiscounted
         - event: NodeFundsWalletUpdated(address,address)
           handler: handleNodeFundsWalletUpdated
@@ -69,3 +70,47 @@ dataSources:
         - event: TokenRegistryUpdated(address,address)
           handler: handleTokenRegistryUpdated
       file: ./src/pre-sale.ts
+  - kind: ethereum
+    name: Claims
+    network: sepolia
+    source:
+      address: "0x53FD84B19216282b78AB630B71755Bfe9F710AaC"
+      abi: Claims
+      startBlock: 7789212
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ClaimRevoked
+        - ClaimSet
+        - ClaimsUpdated
+        - FundsClaimed
+        - FundsWalletUpdated
+        - PresaleUpdated
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+      abis:
+        - name: Claims
+          file: ./abis/Claims.json
+      eventHandlers:
+        - event: ClaimRevoked(address,address,uint256)
+          handler: handleClaimRevoked
+        - event: ClaimSet(indexed address,indexed uint256,uint256,(address,uint256))
+          handler: handleClaimSet
+        - event: ClaimsUpdated(address,address,uint256)
+          handler: handleClaimsUpdated
+        - event: FundsClaimed(indexed address,address,indexed uint256,uint256)
+          handler: handleFundsClaimed
+        - event: FundsWalletUpdated(address,address)
+          handler: handleFundsWalletUpdated
+        - event: PresaleUpdated(address,address)
+          handler: handlePresaleUpdated
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+      file: ./src/claims.ts
