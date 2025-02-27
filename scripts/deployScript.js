@@ -17,12 +17,13 @@ async function main() {
 
     const nodeFundsWallet = '0x5d63cE81FAbaCf586A8fd4039Db08B59BE909D5b';
     const minerFundsWallet = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
+    const insuranceFundsWallet = '0x22dA5C97F742eC3828a8183896dA56B44eFd0471';
     const signerAddress = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
     const owner = '0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269';
     const gemsAddress = '0x7Ddd14E3a173A5Db7bB8fd74b82b667F221492B9';
     const usdtAddress = '0x6fEA2f1b82aFC40030520a6C49B0d3b652A65915';
     const claimsContractAddress = '';
-    const minerNftContractAddress = '';
+    const minerNftContractAddress = '0x0E19759BAeEf956d72eFa006558C959A847DcDe6';
     const nodeNftContractAddress = '';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
     const priceAccretionPercentagePPMInit = '20000';
@@ -65,6 +66,28 @@ async function main() {
     // await new Promise((resolve) => setTimeout(resolve, 30000));
     // verify(NodeNft.target, [owner, nodeNFTUri]);
     // console.log('NodeNft Verified');
+
+    // // // // -------------------------------- Insurance------------------------------------------ //
+    const Insurance = await hre.ethers.deployContract('Insurance', [
+        insuranceFundsWallet,
+        signerAddress,
+        owner,
+        minerNftContractAddress,
+        tokenRegistryAddress
+    ]);
+    console.log('Deploying Insurance...');
+    await Insurance.waitForDeployment();
+    console.log('Insurance deployed to---------', Insurance.target);
+    await new Promise((resolve) => setTimeout(resolve, 30000));
+    verify(Insurance.target, [
+        insuranceFundsWallet,
+        signerAddress,
+        owner,
+        minerNftContractAddress,
+        tokenRegistryAddress
+    ]);
+    console.log('NodeNft Verified');
+    return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
     // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek]);

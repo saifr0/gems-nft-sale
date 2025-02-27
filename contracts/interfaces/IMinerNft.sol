@@ -7,4 +7,6 @@ interface IMinerNft {
     /// @param id The amount of nfts
     /// @param amount The amount of nfts
     function mint(address account, uint256 id, uint256 amount) external;
+
+    function balanceOf(address account, uint256 id) external returns (uint256);
 }
