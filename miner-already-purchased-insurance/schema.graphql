@@ -1,0 +1,83 @@
+type BlacklistUpdated @entity(immutable: true) {
+  id: Bytes!
+  which: Bytes! # address
+  accessNow: Boolean! # bool
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type BuyEnableUpdated @entity(immutable: true) {
+  id: Bytes!
+  oldAccess: Boolean! # bool
+  newAccess: Boolean! # bool
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type InsuranceFundsWalletUpdated @entity(immutable: true) {
+  id: Bytes!
+  oldInsuranceFundsWallet: Bytes! # address
+  newInsuranceFundsWallet: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type InsurancePurchased @entity(immutable: true) {
+  id: Bytes!
+  token: Bytes! # address
+  by: Bytes! # address
+  quantities: [BigInt!]! # uint256[3]
+  insuranceAmount: BigInt! # uint256
+  trxHash: String! # string
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type MinerNftUpdated @entity(immutable: true) {
+  id: Bytes!
+  oldMinerNft: Bytes! # address
+  newMinerNft: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type OwnershipTransferStarted @entity(immutable: true) {
+  id: Bytes!
+  previousOwner: Bytes! # address
+  newOwner: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type OwnershipTransferred @entity(immutable: true) {
+  id: Bytes!
+  previousOwner: Bytes! # address
+  newOwner: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type SignerUpdated @entity(immutable: true) {
+  id: Bytes!
+  oldSigner: Bytes! # address
+  newSigner: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TokenRegistryUpdated @entity(immutable: true) {
+  id: Bytes!
+  oldTokenRegistry: Bytes! # address
+  newTokenRegistry: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
