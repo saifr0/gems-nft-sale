@@ -11,9 +11,7 @@ import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2St
 import { IMiner } from "./interfaces/IMiner.sol";
 import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
 
-import { PPM, ETH, ZeroAddress, IdenticalValue, ArrayLengthMismatch, InvalidSignature, InvalidData, ZeroValue, TokenInfo } from "./utils/Common.sol";
-
-import { Test, console } from "../lib/forge-std/src/Test.sol";
+import { PPM, ETH, ZeroAddress, IdenticalValue, InvalidSignature, ZeroValue, TokenInfo } from "./utils/Common.sol";
 
 /// @title Insurance contract
 /// @notice Implements insurance of miner nfts
@@ -31,14 +29,14 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the signer wallet
     address public signerWallet;
 
-    /// @notice The prices of the miner nfts
-    uint256[3] public minerNFTPrices;
-
     /// @notice The address of the insurance funds wallet
     address public insuranceFundsWallet;
 
     /// @notice The address of the token registry contract
     ITokenRegistry public tokenRegistry;
+
+    /// @notice The insurance fee in PPM
+    uint256 public insuranceFeePPM;
 
     /// @notice Gives info about address's permission
     mapping(address => bool) public blacklistAddress;
@@ -55,14 +53,17 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     /// @dev Emitted when buying access changes
     event BuyEnableUpdated(bool oldAccess, bool newAccess);
 
-    /// @dev Emitted when miner is purchased
+    /// @dev Emitted when insurance is purchased
     event InsurancePurchased(IERC20 token, address by, uint256[3] quantities, uint256 insuranceAmount, string trxHash);
 
     /// @dev Emitted when address of token registry contract is updated
     event TokenRegistryUpdated(ITokenRegistry oldTokenRegistry, ITokenRegistry newTokenRegistry);
 
-    /// @dev Emitted when address miner nft contract is updated
+    /// @dev Emitted when address of miner nft contract is updated
     event MinerNftUpdated(IMiner oldMinerNft, IMiner newMinerNft);
+
+    /// @dev Emitted when insurance fee is updated
+    event InsuranceFeeUpdated(uint256 oldInsuranceFee, uint256 newInsuranceFee);
 
     /// @notice Thrown when address is blacklisted
     error Blacklisted();
@@ -91,29 +92,36 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     /// @param owner The address of owner wallet
     /// @param minerNftAddress The address of miner nft contract
     /// @param tokenRegistryAddress The address of token registry contract
+    /// @param insuranceFeePPMInit The insurance fee
     constructor(
         address insuranceFundsWalletAddress,
         address signerAddress,
         address owner,
         IMiner minerNftAddress,
-        ITokenRegistry tokenRegistryAddress
+        ITokenRegistry tokenRegistryAddress,
+        uint256 insuranceFeePPMInit
     )
         Ownable(owner)
         checkAddressZero(signerAddress)
         checkAddressZero(address(minerNftAddress))
         checkAddressZero(address(tokenRegistryAddress))
     {
+        if (insuranceFeePPMInit == 0) {
+            revert ZeroValue();
+        }
+
         insuranceFundsWallet = insuranceFundsWalletAddress;
         signerWallet = signerAddress;
         minerNft = minerNftAddress;
         tokenRegistry = tokenRegistryAddress;
+        insuranceFeePPM = insuranceFeePPMInit;
     }
 
-    /// @notice Purchases miner with any token
+    /// @notice Purchases insurance with any token
     /// @param token The token used in the purchase
-    /// @param prices The current price of token in 10 decimals
+    /// @param prices The prices of miners
     /// @param deadline The deadline is validity of the signature
-    /// @param quantities The amount of each miner that you want to purchase
+    /// @param quantities The amount of each miner that you want to insure
     /// @param referenceTokenPrice The current price of token in 10 decimals
     /// @param referenceNormalizationFactor The normalization factor
     /// @param trxHash The normalization factor
@@ -168,6 +176,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
             r,
             s
         );
+
         (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(
             token,
             referenceTokenPrice,
@@ -176,10 +185,6 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
 
         uint256 totalAmount;
         uint256 quantityLength = quantities.length;
-
-        if (quantityLength != prices.length) {
-            revert ArrayLengthMismatch();
-        }
 
         for (uint256 i; i < quantityLength; ++i) {
             uint256 quantity = quantities[i];
@@ -196,8 +201,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         }
 
         uint256 insuranceAmount;
-        insuranceAmount = (totalAmount * 5_0000) / 1_000_000;
-
+        insuranceAmount = (totalAmount * insuranceFeePPM) / PPM;
         insuranceAmount = (insuranceAmount * (10 ** normalizationFactor)) / latestPrice;
 
         if (insuranceAmount == 0) {
@@ -266,6 +270,23 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         });
 
         insuranceFundsWallet = newInsuranceFundsWallet;
+    }
+    /// @notice Changes the insurance
+    /// @param newInsuranceFee The new Insurance fee
+    function updateInsuranceFee(uint256 newInsuranceFee) external onlyOwner {
+        uint256 oldInsuranceFee = insuranceFeePPM;
+
+        if (newInsuranceFee == oldInsuranceFee) {
+            revert IdenticalValue();
+        }
+
+        if (newInsuranceFee == 0) {
+            revert ZeroValue();
+        }
+
+        emit InsuranceFeeUpdated({ oldInsuranceFee: oldInsuranceFee, newInsuranceFee: newInsuranceFee });
+
+        insuranceFeePPM = newInsuranceFee;
     }
 
     /// @notice Changes the access of any address in contract interaction

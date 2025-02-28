@@ -144,7 +144,8 @@ contract PreSaleTest is Test {
             signer,
             owner,
             IMiner(address(minerNftContract)),
-            ITokenRegistry(address(tokenRegistryContract))
+            ITokenRegistry(address(tokenRegistryContract)),
+            50000
         );
 
         vm.startPrank(owner);
@@ -170,19 +171,13 @@ contract PreSaleTest is Test {
         vm.stopPrank();
     }
 
-    function testMinerPurchaseWithUSDT() external {
-        uint256 expectedMinerWalletFunds;
-        uint256 prices;
-
+    function testInsurancePurchaseWithETH() external {
         uint256 deadline = block.timestamp;
         uint256 price = 0;
         uint8 nf = 0;
-        bool isInsured = true;
         string memory trxHash = "0x2b120b172ee2e96da9a497593c03aaaac0c268680a0e2f75e7465ce2fa9c9fb6";
         uint256[3] memory quantities = [uint(1), uint(2), uint(3)];
         uint256[3] memory quantities1 = [uint(1), uint(2), uint(3)];
-        uint256[3] memory quantities4 = [uint(0), uint(2), uint(6)];
-
         //sign
         (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
         (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignInsurance(
@@ -195,55 +190,9 @@ contract PreSaleTest is Test {
             deadline
         );
 
-        // (uint8 v4, bytes32 r4, bytes32 s4) = _validateSignInsurance(
-        //     insuranceTokens,
-        //     insurancePrices,
-        //     quantities4,
-        //     deadline
-        // );
-
-        // getting ETH latest price and normalization factor
-        uint256 latestPriceUSDT = tokenRegistryContract.getLatestPrice(IERC20(ETH)).latestPrice;
-        uint8 nfUSDT = tokenRegistryContract.getLatestPrice(IERC20(ETH)).normalizationFactor;
-
-        //calaculating nft purchasing amount
-        uint256[3] memory minerPrices = minerNFTPrices;
-        uint256 quantityLength = quantities.length;
-
-        for (uint256 i; i < quantityLength; ++i) {
-            uint256 quantity = quantities[i];
-
-            if (quantity > 0) {
-                prices += (minerPrices[i] * quantity);
-            }
-        }
-
-        // expectedMinerWalletFunds = (prices * (10 ** nfUSDT)) / latestPriceUSDT;
-
-        //sign
-        // (uint8 v2, bytes32 r2, bytes32 s2) = _validateSignWithTokenDiscounted(price, nf, 100000, ETH, deadline, true);
-
         //miner buying
         vm.startPrank(user);
-        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
-        USDT.forceApprove(address(insurance), USDT.balanceOf(user));
         preSale.purchaseMinerNFT{ value: 50 ether }(ETH, price, deadline, quantities, nf, v, r, s);
-        // preSale.purchaseMinerNFTDiscount{ value: 50 ether }(
-        //     ETH,
-        //     price,
-        //     deadline,
-        //     100000,
-        //     quantities,
-        //     percentages,
-        //     leaders,
-        //     nf,
-        //     true,
-        //     code,
-        //     v2,
-        //     r2,
-        //     s2
-        // );
-        console.log("balance---", user.balance);
         insurance.purchaseInsurance{ value: 1 ether }(
             ETH,
             minerNFTPrices,
@@ -258,20 +207,46 @@ contract PreSaleTest is Test {
         );
 
         vm.stopPrank();
+    }
 
-        // //miner and user walllet balance assertion
-        // assertEq(USDT.balanceOf(preSale.minerFundsWallet()), expectedMinerWalletFunds, "Miner Wallet Funds");
+    function testInsurancePurchaseWithUSDT() external {
+        uint256 deadline = block.timestamp;
+        uint256 price = 0;
+        uint8 nf = 0;
+        string memory trxHash = "0x2b120b172ee2e96da9a497593c03aaaac0c268680a0e2f75e7465ce2fa9c9fb6";
+        uint256[3] memory quantities = [uint(1), uint(2), uint(3)];
+        uint256[3] memory quantities1 = [uint(1), uint(2), uint(3)];
+        //sign
+        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline);
+        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignInsurance(
+            USDT,
+            minerNFTPrices,
+            quantities1,
+            price,
+            nf,
+            trxHash,
+            deadline
+        );
 
-        // //user nft balance assertions
-        // for (uint256 i; i < quantityLength; ++i) {
-        //     uint256 quantity = quantities[i];
-        //     if (quantity > 0) {
-        //         uint256 tokenId = i;
-        //         uint256 userBalance = minerNftContract.balanceOf(user, tokenId);
+        //miner buying
+        vm.startPrank(user);
+        USDT.forceApprove(address(preSale), USDT.balanceOf(user));
+        USDT.forceApprove(address(insurance), USDT.balanceOf(user));
+        preSale.purchaseMinerNFT{ value: 50 ether }(USDT, price, deadline, quantities, nf, v, r, s);
+        insurance.purchaseInsurance{ value: 1 ether }(
+            USDT,
+            minerNFTPrices,
+            deadline,
+            quantities1,
+            price,
+            nf,
+            trxHash,
+            v1,
+            r1,
+            s1
+        );
 
-        //         assertEq(userBalance, quantity, "user Nfts");
-        //     }
-        // }
+        vm.stopPrank();
     }
 
     function _validateSignWithToken(

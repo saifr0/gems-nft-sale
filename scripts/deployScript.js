@@ -73,7 +73,8 @@ async function main() {
         signerAddress,
         owner,
         minerNftContractAddress,
-        tokenRegistryAddress
+        tokenRegistryAddress,
+        50000
     ]);
     console.log('Deploying Insurance...');
     await Insurance.waitForDeployment();
@@ -84,7 +85,8 @@ async function main() {
         signerAddress,
         owner,
         minerNftContractAddress,
-        tokenRegistryAddress
+        tokenRegistryAddress,
+        50000
     ]);
     console.log('NodeNft Verified');
     return;
