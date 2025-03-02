@@ -24,8 +24,8 @@ async function main() {
     const gemsAddress = '0x7Ddd14E3a173A5Db7bB8fd74b82b667F221492B9';
     const usdtAddress = '0x6fEA2f1b82aFC40030520a6C49B0d3b652A65915';
     const claimsContractAddress = '';
-    const minerNftContractAddress = '0x873C2AAd39f94D833aF2e985858C4Ac08aF9BAB0';
-    const nodeNftContractAddress = '0xE42559FDd11306b39fF62590Ed3BDC859705A80A';
+    const minerNftContractAddress = '0x0E19759BAeEf956d72eFa006558C959A847DcDe6';
+    const nodeNftContractAddress = '0x6cdcd39c98F603f0db026aAf4f4885ABb0a4d62f';
     const tokenRegistryAddress = '0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f';
     const priceAccretionPercentagePPMInit = '20000';
     const nodesNFTPriceInit = '99000000';
@@ -67,15 +67,14 @@ async function main() {
     // await new Promise((resolve) => setTimeout(resolve, 30000));
     // verify(NodeNft.target, [owner, nodeNFTUri]);
     // console.log('NodeNft Verified');
-    // return;
 
     // // // -------------------------------- CLAIMS------------------------------------------ //
-    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740405497]);
+    // const Claims = await hre.ethers.deployContract('Claims', [owner, lastWeek, 1740528090]);
     // console.log('Deploying Claims...');
     // await Claims.waitForDeployment();
     // console.log('Claims deployed to---------', Claims.target);
     // await new Promise((resolve) => setTimeout(resolve, 30000));
-    // verify(Claims.target, [owner, lastWeek, 1740405497]);
+    // verify(Claims.target, [owner, lastWeek, 1740528090]);
     // console.log('Claims Verified');
     // return;
 
@@ -87,7 +86,7 @@ async function main() {
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
+        '0x53FD84B19216282b78AB630B71755Bfe9F710AaC',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,
@@ -95,7 +94,7 @@ async function main() {
         0,
         0,
         priceAccretionPercentagePPMInit,
-        20000,
+        50000,
         minersNFTPriceInit
     ]);
 
@@ -113,7 +112,7 @@ async function main() {
         insuranceFundsWallet,
         signerAddress,
         owner,
-        '0x8D66B877c8e9486E6E72bC05c18C798CBdA90161',
+        '0x53FD84B19216282b78AB630B71755Bfe9F710AaC',
         minerNftContractAddress,
         nodeNftContractAddress,
         tokenRegistryAddress,
@@ -121,7 +120,7 @@ async function main() {
         0,
         0,
         priceAccretionPercentagePPMInit,
-        20000,
+        50000,
         minersNFTPriceInit
     ]);
 

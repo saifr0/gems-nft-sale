@@ -155,7 +155,8 @@ export function createMinerNftPurchasedEvent(
   minerPrices: Array<BigInt>,
   quantities: Array<BigInt>,
   amountPurchased: BigInt,
-  isInsured: boolean
+  isInsured: boolean,
+  insuranceAmount: BigInt
 ): MinerNftPurchased {
   let minerNftPurchasedEvent = changetype<MinerNftPurchased>(newMockEvent())
 
@@ -194,6 +195,12 @@ export function createMinerNftPurchasedEvent(
   minerNftPurchasedEvent.parameters.push(
     new ethereum.EventParam("isInsured", ethereum.Value.fromBoolean(isInsured))
   )
+  minerNftPurchasedEvent.parameters.push(
+    new ethereum.EventParam(
+      "insuranceAmount",
+      ethereum.Value.fromUnsignedBigInt(insuranceAmount)
+    )
+  )
 
   return minerNftPurchasedEvent
 }
@@ -209,7 +216,8 @@ export function createMinerNftPurchasedDiscountedEvent(
   leaders: Array<Address>,
   percentages: Array<BigInt>,
   discountPercentage: BigInt,
-  isInsured: boolean
+  isInsured: boolean,
+  insuranceAmount: BigInt
 ): MinerNftPurchasedDiscounted {
   let minerNftPurchasedDiscountedEvent =
     changetype<MinerNftPurchasedDiscounted>(newMockEvent())
@@ -266,6 +274,12 @@ export function createMinerNftPurchasedDiscountedEvent(
   )
   minerNftPurchasedDiscountedEvent.parameters.push(
     new ethereum.EventParam("isInsured", ethereum.Value.fromBoolean(isInsured))
+  )
+  minerNftPurchasedDiscountedEvent.parameters.push(
+    new ethereum.EventParam(
+      "insuranceAmount",
+      ethereum.Value.fromUnsignedBigInt(insuranceAmount)
+    )
   )
 
   return minerNftPurchasedDiscountedEvent

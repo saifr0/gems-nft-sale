@@ -61,6 +61,7 @@ type MinerNftPurchased @entity(immutable: true) {
     quantities: [BigInt!]! # uint256[3]
     amountPurchased: BigInt! # uint256
     isInsured: Boolean! # bool
+    insuranceAmount: BigInt! # uint256
     blockNumber: BigInt!
     blockTimestamp: BigInt!
     transactionHash: Bytes!
@@ -79,6 +80,7 @@ type MinerNftPurchasedDiscounted @entity(immutable: true) {
     percentages: [BigInt!]! # uint256[]
     discountPercentage: BigInt! # uint256
     isInsured: Boolean! # bool
+    insuranceAmount: BigInt! # uint256
     blockNumber: BigInt!
     blockTimestamp: BigInt!
     transactionHash: Bytes!
@@ -244,6 +246,7 @@ type MinerNft @entity(immutable: false) {
     blockNumber: BigInt!
     blockTimestamp: BigInt!
     isInsured: Boolean! # bool
+    insuranceAmount: BigInt! # uint256
     transactionHash: Bytes!
 }
 

@@ -35,10 +35,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The maximum percentage of the leader's commissions
-    uint256 public constant claimsPercentagePPM = 250_000;
-
-    /// @notice The maximum percentage of the leader's commissions in case of insurance
-    uint256 public constant insuredClaimsPercentagePPM = 200_000;
+    uint256 public constant CLAIMS_PERCENTAGE_PPM = 250_000;
 
     /// @notice The address of claims contract
     IClaims public immutable claimsContract;
@@ -49,7 +46,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @notice The address of the node nft contract
     INodeNft public immutable nodeNft;
 
-    /// @notice The total usd raised usd
+    /// @notice The total usd raised
     uint256 public totalRaised;
 
     /// @notice The total purchases upto 1 million usd, it will reset after every million cap increased
@@ -135,7 +132,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         uint256[3] minerPrices,
         uint256[3] quantities,
         uint256 amountPurchased,
-        bool isInsured
+        bool isInsured,
+        uint256 insuranceAmount
     );
 
     /// @dev Emitted when miner is purchased on discounted price
@@ -150,7 +148,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         address[] leaders,
         uint256[] percentages,
         uint256 discountPercentage,
-        bool isInsured
+        bool isInsured,
+        uint256 insuranceAmount
     );
 
     /// @notice Thrown when address is blacklisted
@@ -328,7 +327,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param deadline The deadline is validity of the signature
     /// @param quantities The amount of each miner that you want to purchase
     /// @param referenceNormalizationFactor The normalization factor
-    /// @param isInsured The normalization factor
+    /// @param isInsured The decision about insurance
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
@@ -395,7 +394,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             minerPrices: minerPrices,
             quantities: quantities,
             amountPurchased: purchaseAmount,
-            isInsured: isInsured
+            isInsured: isInsured,
+            insuranceAmount: insuranceAmount
         });
     }
 
@@ -408,7 +408,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     /// @param percentages The leader's percentages
     /// @param leaders The addresses of the leaders
     /// @param referenceNormalizationFactor The normalization factor
-    /// @param isInsured The normalization factor
+    /// @param isInsured The decision about insurance
     /// @param code The code is used to verify signature of the user
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
@@ -472,7 +472,8 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             leaders: leaders,
             percentages: percentages,
             discountPercentage: discountPercentagePPM,
-            isInsured: isInsured
+            isInsured: isInsured,
+            insuranceAmount: insuranceAmount
         });
     }
 
@@ -838,7 +839,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             revert ZeroValue();
         }
 
-        if (sumPercentage > (isInsured ? insuredClaimsPercentagePPM : claimsPercentagePPM)) {
+        if (sumPercentage > CLAIMS_PERCENTAGE_PPM) {
             revert InvalidPercentage();
         }
 

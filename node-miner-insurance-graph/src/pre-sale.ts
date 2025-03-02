@@ -118,6 +118,7 @@ export function handleMinerNftPurchased(event: MinerNftPurchasedEvent): void {
     entity.quantities = event.params.quantities;
     entity.amountPurchased = event.params.amountPurchased;
     entity.isInsured = event.params.isInsured;
+    entity.insuranceAmount = event.params.insuranceAmount;
 
     entity.blockNumber = event.block.number;
     entity.blockTimestamp = event.block.timestamp;
@@ -141,6 +142,7 @@ export function handleMinerNftPurchased(event: MinerNftPurchasedEvent): void {
     _purchased.blockNumber = event.block.number;
     _purchased.blockTimestamp = event.block.timestamp;
     _purchased.isInsured = event.params.isInsured;
+    _purchased.insuranceAmount = event.params.insuranceAmount;
     _purchased.transactionHash = event.transaction.hash;
     _purchased.save();
 }
@@ -158,12 +160,14 @@ export function handleMinerNftPurchasedDiscounted(event: MinerNftPurchasedDiscou
     entity.percentages = event.params.percentages;
     entity.discountPercentage = event.params.discountPercentage;
     entity.isInsured = event.params.isInsured;
+    entity.insuranceAmount = event.params.insuranceAmount;
 
     entity.blockNumber = event.block.number;
     entity.blockTimestamp = event.block.timestamp;
     entity.transactionHash = event.transaction.hash;
 
     entity.save();
+
     let _id = event.transaction.hash.concatI32(event.logIndex.toI32());
     let _purchased = new MinerNft(_id);
 
@@ -192,6 +196,7 @@ export function handleMinerNftPurchasedDiscounted(event: MinerNftPurchasedDiscou
     _purchased.blockNumber = event.block.number;
     _purchased.blockTimestamp = event.block.timestamp;
     _purchased.isInsured = event.params.isInsured;
+    _purchased.insuranceAmount = event.params.insuranceAmount;
     _purchased.transactionHash = event.transaction.hash;
     _purchased.save();
 }
