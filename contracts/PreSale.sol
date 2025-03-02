@@ -26,13 +26,13 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
     uint256 private constant DISCOUNT_PERCENTAGE_PPM = 500_000;
 
     /// @dev The constant value of one million in dollars
-    uint256 private constant ONE_MILLION_DOLLAR = 1_000_0e6;
+    uint256 private constant ONE_MILLION_DOLLAR = 1_000_000e6;
 
     /// @dev The max length of the leaders array
     uint256 private constant LEADERS_LENGTH = 5;
 
     /// @notice The maximum amount of money project hopes to raise
-    uint256 public constant MAX_CAP = 40_000_0e6;
+    uint256 public constant MAX_CAP = 40_000_000e6;
 
     /// @notice The maximum percentage of the leader's commissions
     uint256 public constant claimsPercentagePPM = 250_000;
@@ -374,6 +374,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             if (isInsured) {
                 payable(insuranceFundsWallet).sendValue(insuranceAmount);
             }
+
             payable(minerFundsWallet).sendValue(purchaseAmount);
 
             if (msg.value > (purchaseAmount + insuranceAmount)) {
@@ -383,6 +384,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             if (isInsured) {
                 token.safeTransferFrom(msg.sender, insuranceFundsWallet, insuranceAmount);
             }
+
             token.safeTransferFrom(msg.sender, minerFundsWallet, purchaseAmount);
         }
 
