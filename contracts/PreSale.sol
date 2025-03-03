@@ -373,6 +373,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             if (isInsured) {
                 payable(insuranceFundsWallet).sendValue(insuranceAmount);
             }
+
             payable(minerFundsWallet).sendValue(purchaseAmount);
 
             if (msg.value > (purchaseAmount + insuranceAmount)) {
@@ -382,6 +383,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             if (isInsured) {
                 token.safeTransferFrom(msg.sender, insuranceFundsWallet, insuranceAmount);
             }
+
             token.safeTransferFrom(msg.sender, minerFundsWallet, purchaseAmount);
         }
 
@@ -826,6 +828,7 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
 
         uint256 sumPercentage;
+
         for (uint256 i; i < toLength; ++i) {
             uint256 percentage = percentages[i];
             sumPercentage += percentage;

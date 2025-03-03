@@ -16,6 +16,7 @@ import { IMinerNft } from "../contracts/interfaces/IMinerNft.sol";
 import { INodeNft } from "../contracts/interfaces/INodeNft.sol";
 import { NodeNft } from "../contracts/nfts/NodeNft.sol";
 import { MinerNft } from "../contracts/nfts/MinerNft.sol";
+
 contract PreSaleTest is Test {
     using MessageHashUtils for bytes32;
     using SafeERC20 for IERC20;
