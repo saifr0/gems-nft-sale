@@ -504,10 +504,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        if (isInsured) {
-            insuranceAmount = (prices * insuranceFeePPM) / PPM;
-        }
-
         _checkZeroValue(prices);
 
         if (discountPercentagePPM != 0) {
@@ -516,6 +512,10 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
             }
 
             prices -= (prices * discountPercentagePPM) / PPM;
+        }
+
+        if (isInsured) {
+            insuranceAmount = (prices * insuranceFeePPM) / PPM;
         }
 
         totalRaised += prices;
