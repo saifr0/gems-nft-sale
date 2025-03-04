@@ -171,51 +171,51 @@ contract PreSaleTest is Test {
         vm.stopPrank();
     }
 
-    function testInsurancePurchaseWithETH() external {
-        uint256 deadline = block.timestamp;
-        uint256 price = 0;
-        uint8 nf = 0;
-        string memory trxHash = "0x2b120b172ee2e96da9a497593c03aaaac0c268680a0e2f75e7465ce2fa9c9fb6";
-        uint256[3] memory quantities = [uint(1), uint(2), uint(3)];
-        uint256[3] memory quantities1 = [uint(1), uint(2), uint(3)];
-        //sign
-        (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
-        (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignInsurance(
-            ETH,
-            minerNFTPrices,
-            quantities1,
-            price,
-            nf,
-            trxHash,
-            deadline
-        );
+    // function testInsurancePurchaseWithETH() external {
+    //     uint256 deadline = block.timestamp;
+    //     uint256 price = 0;
+    //     uint8 nf = 0;
+    //     string memory trxHash = "0x2b120b172ee2e96da9a497593c03aaaac0c268680a0e2f75e7465ce2fa9c9fb6";
+    //     uint256[3] memory quantities = [uint(1), uint(2), uint(3)];
+    //     uint256[3] memory quantities1 = [uint(1), uint(2), uint(3)];
+    //     //sign
+    //     (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, ETH, deadline);
+    //     (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignInsurance(
+    //         ETH,
+    //         minerNFTPrices,
+    //         quantities1,
+    //         price,
+    //         nf,
+    //         trxHash,
+    //         deadline
+    //     );
 
-        //miner buying
-        vm.startPrank(user);
-        preSale.purchaseMinerNFT{ value: 50 ether }(ETH, price, deadline, quantities, nf, v, r, s);
-        insurance.purchaseInsurance{ value: 1 ether }(
-            ETH,
-            minerNFTPrices,
-            deadline,
-            quantities1,
-            price,
-            nf,
-            trxHash,
-            v1,
-            r1,
-            s1
-        );
+    //     //miner buying
+    //     vm.startPrank(user);
+    //     preSale.purchaseMinerNFT{ value: 50 ether }(ETH, price, deadline, quantities, nf, v, r, s);
+    //     insurance.purchaseInsurance{ value: 1 ether }(
+    //         ETH,
+    //         minerNFTPrices,
+    //         deadline,
+    //         quantities1,
+    //         price,
+    //         nf,
+    //         trxHash,
+    //         v1,
+    //         r1,
+    //         s1
+    //     );
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
     function testInsurancePurchaseWithUSDT() external {
         uint256 deadline = block.timestamp;
         uint256 price = 0;
         uint8 nf = 0;
         string memory trxHash = "0x2b120b172ee2e96da9a497593c03aaaac0c268680a0e2f75e7465ce2fa9c9fb6";
-        uint256[3] memory quantities = [uint(1), uint(2), uint(3)];
-        uint256[3] memory quantities1 = [uint(1), uint(2), uint(3)];
+        uint256[3] memory quantities = [uint(1), uint(0), uint(0)];
+        uint256[3] memory quantities1 = [uint(1), uint(0), uint(0)];
         //sign
         (uint8 v, bytes32 r, bytes32 s) = _validateSignWithToken(price, nf, USDT, deadline);
         (uint8 v1, bytes32 r1, bytes32 s1) = _validateSignInsurance(

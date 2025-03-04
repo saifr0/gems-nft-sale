@@ -15,7 +15,7 @@ import { PPM, ETH, ZeroAddress, IdenticalValue, InvalidSignature, ZeroValue, Tok
 
 /// @title Insurance contract
 /// @notice Implements insurance of miner nfts
-/// @dev The insurance contract allows you to purchase miners insurance
+/// @dev The insurance contract allows you to purchase owned miners insurance
 contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using Address for address payable;
@@ -200,8 +200,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
             }
         }
 
-        uint256 insuranceAmount;
-        insuranceAmount = (totalAmount * insuranceFeePPM) / PPM;
+        uint256 insuranceAmount = (totalAmount * insuranceFeePPM) / PPM;
         insuranceAmount = (insuranceAmount * (10 ** normalizationFactor)) / latestPrice;
 
         if (insuranceAmount == 0) {
@@ -253,7 +252,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         signerWallet = newSigner;
     }
 
-    /// @notice Changes miner funds wallet address
+    /// @notice Changes insurance funds wallet address
     /// @param newInsuranceFundsWallet The address of the new insurance funds wallet
     function updateInsuranceFundsWallet(
         address newInsuranceFundsWallet
@@ -271,7 +270,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
 
         insuranceFundsWallet = newInsuranceFundsWallet;
     }
-    /// @notice Changes the insurance
+    /// @notice Changes the insurance fee
     /// @param newInsuranceFee The new Insurance fee
     function updateInsuranceFee(uint256 newInsuranceFee) external onlyOwner {
         uint256 oldInsuranceFee = insuranceFeePPM;
@@ -320,8 +319,8 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         tokenRegistry = newTokenRegistry;
     }
 
-    /// @notice Changes token registry contract address
-    /// @param newMinerNft The address of the new token registry contract
+    /// @notice Changes miner nft contract address
+    /// @param newMinerNft The address of the new miner nft contract
     function updateMinerNft(IMiner newMinerNft) external checkAddressZero(address(newMinerNft)) onlyOwner {
         IMiner oldMinerNft = minerNft;
 
@@ -341,6 +340,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         }
     }
 
+    /// @dev Validates the token price
     function _validatePrice(
         IERC20 token,
         uint256 referenceTokenPrice,
