@@ -10,18 +10,31 @@ async function verify(address, constructorArguments) {
 async function main() {
     await hre.run('compile');
 
+    // const minerFundsWallet = '0x3785744Cb6678f589986062250444Bb6932a2d8C';
+    // const minerNftContractAddress = '0x825778E24b6f059549294710C67f4539D9960E54';
+    // const nodeFundsWallet = '0x7B6b771DF9ECEFb3Df170aC94454C73519436799';
+    // const nodeNftContractAddress = '0x020B1594ccD0ebA1a39E854aF22e7f0083AE3ae6';
+    const insuranceFundsWalletAddress = '0xc976fa8bc20ED2e6812dC77b4485CE573F6DE46d';
+    // const signerAddress = '0x8002917a84DB1B1Ef57f7Cf0B19f5F5c611db9D5';
+    // const owner = '0x3B764564639032F61fdA5360727577A4CbCe75cB';
+    // const tokenRegistryAddress = '0x2DAE9ac095df77755ae2ceD6AdDdD178701027df';
+    // const priceAccretionPercentagePPMInit = '25000';
+    // const nodesNFTPriceInit = '99000000';
+    // const minersNFTPriceInit = ['203975000', '4098975000', '20498975000'];
+
+    // const prevAccretionThreshold = '191196187500';
+    // const prevTotalRaised = '1191196187500';
+    // const currentWeek = '6';
     const minerFundsWallet = '0x3785744Cb6678f589986062250444Bb6932a2d8C';
     const minerNftContractAddress = '0x825778E24b6f059549294710C67f4539D9960E54';
     const nodeFundsWallet = '0x7B6b771DF9ECEFb3Df170aC94454C73519436799';
     const nodeNftContractAddress = '0x020B1594ccD0ebA1a39E854aF22e7f0083AE3ae6';
-    const insuranceFundsWalletAddress = '0xc976fa8bc20ED2e6812dC77b4485CE573F6DE46d';
     const signerAddress = '0x8002917a84DB1B1Ef57f7Cf0B19f5F5c611db9D5';
     const owner = '0x3B764564639032F61fdA5360727577A4CbCe75cB';
     const tokenRegistryAddress = '0x2DAE9ac095df77755ae2ceD6AdDdD178701027df';
     const priceAccretionPercentagePPMInit = '25000';
     const nodesNFTPriceInit = '99000000';
     const minersNFTPriceInit = ['203975000', '4098975000', '20498975000'];
-
     const prevAccretionThreshold = '191196187500';
     const prevTotalRaised = '1191196187500';
     const currentWeek = '6';
@@ -35,8 +48,8 @@ async function main() {
     // console.log('Claims deployed to---------', Claims.target);
     // await new Promise((resolve) => setTimeout(resolve, 30000));
 
-    verify('0x0F8d011aEc647ECD601dE4e3CD7774BeB03b4507', [owner, currentWeek]);
-    console.log('Claims Verified');
+    // verify('0x0F8d011aEc647ECD601dE4e3CD7774BeB03b4507', [owner, currentWeek]);
+    // console.log('Claims Verified');
 
     // // -------------------------------- TokenRegistry------------------------------------------ //
 
@@ -86,9 +99,9 @@ async function main() {
 
     console.log('PreSale Verified');
 
-    let claims = await hre.ethers.getContractAt('Claims', '0x0F8d011aEc647ECD601dE4e3CD7774BeB03b4507');
+    // let claims = await hre.ethers.getContractAt('Claims', '0x0F8d011aEc647ECD601dE4e3CD7774BeB03b4507');
 
-    await claims.updatePresaleAddress(PreSale.target);
+    // await claims.updatePresaleAddress(PreSale.target);
 
     return;
 
