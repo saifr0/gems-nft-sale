@@ -1,0 +1,8 @@
+{
+  "mainnet": {
+    "Insurance": {
+      "address": "0x86f9E6D7E3D159ec928b980d4146f65f6d77C3Dd",
+      "startBlock": 21989064
+    }
+  }
+}

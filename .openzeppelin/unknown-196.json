@@ -1,0 +1,174 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x07AA440a2cc116fB1C01BF135F6d7AFBdd36c57f",
+      "txHash": "0x7255b47d991c63f8910943b7bb580ad1d313c603608607228b30daa82159a28a",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x2B045A64863917F5365C9B5625AeC9d176Cdcfaf",
+      "txHash": "0xb4d8ecfcf289760d30b99843bee04e3c725a1066903e11ae1de075be903ffa04",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x37F2C25561dC3859c936f55694f47EaCA0671093",
+      "txHash": "0xf3b1221db34eafc399922bba6ac6c2db0f50f2d18948491abad94bd222afb3fa",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xDc091260C305339f6dc0e55e58F24ea2131e37bB",
+      "txHash": "0x3c8b9d78afb83f32836e414af2d24f2c046f940508e655a5a8fd874c9036aaa3",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "6c7e21b8785d45577a9e51d863a6e63365ca8ef6e219df281312db3dd74aeb91": {
+      "address": "0xF2414E7506AEf59C3b0b3A9Fc2B0537a9521f8E0",
+      "txHash": "0xf215f4075a758a6554139bc36a7373a89f34ebc947a3b11bf94c876bc86ee78c",
+      "layout": {
+        "solcVersion": "0.8.25",
+        "storage": [
+          {
+            "label": "tokenData",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_contract(IERC20)2710,t_struct(PriceFeedData)12006_storage)",
+            "contract": "TokenRegistry",
+            "src": "contracts/TokenRegistry.sol:25"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "TokenRegistry",
+            "src": "contracts/TokenRegistry.sol:111"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)119_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)59_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_contract(AggregatorV3Interface)45": {
+            "label": "contract AggregatorV3Interface",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)2710": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_contract(IERC20)2710,t_struct(PriceFeedData)12006_storage)": {
+            "label": "mapping(contract IERC20 => struct TokenRegistry.PriceFeedData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(PriceFeedData)12006_storage": {
+            "label": "struct TokenRegistry.PriceFeedData",
+            "members": [
+              {
+                "label": "priceFeed",
+                "type": "t_contract(AggregatorV3Interface)45",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "normalizationFactor",
+                "type": "t_uint8",
+                "offset": 20,
+                "slot": "0"
+              },
+              {
+                "label": "tolerance",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

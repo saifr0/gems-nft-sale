@@ -15,7 +15,7 @@ import { PPM, ETH, ZeroAddress, IdenticalValue, InvalidSignature, ZeroValue, Tok
 
 /// @title Insurance contract
 /// @notice Implements insurance of miner nfts
-/// @dev The insurance contract allows you to purchase owned miners insurance
+/// @dev The insurance contract allows you to purchase insurance for already purchased miners
 contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
     using Address for address payable;
@@ -54,7 +54,15 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
     event BuyEnableUpdated(bool oldAccess, bool newAccess);
 
     /// @dev Emitted when insurance is purchased
-    event InsurancePurchased(IERC20 token, address by, uint256[3] quantities, uint256 insuranceAmount, string trxHash);
+    event InsurancePurchased(
+        IERC20 indexed token,
+        address indexed by,
+        uint256[3] quantities,
+        uint256[3] prices,
+        uint256 insuranceAmount,
+        uint256 latestPrice,
+        string txHash
+    );
 
     /// @dev Emitted when address of token registry contract is updated
     event TokenRegistryUpdated(ITokenRegistry oldTokenRegistry, ITokenRegistry newTokenRegistry);
@@ -117,14 +125,14 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         insuranceFeePPM = insuranceFeePPMInit;
     }
 
-    /// @notice Purchases insurance with any token
+    /// @notice Purchases insurance with token used in the purchase earlier
     /// @param token The token used in the purchase
     /// @param prices The prices of miners
     /// @param deadline The deadline is validity of the signature
     /// @param quantities The amount of each miner that you want to insure
     /// @param referenceTokenPrice The current price of token in 10 decimals
     /// @param referenceNormalizationFactor The normalization factor
-    /// @param trxHash The normalization factor
+    /// @param txHash The normalization factor
     /// @param v The `v` signature parameter
     /// @param r The `r` signature parameter
     /// @param s The `s` signature parameter
@@ -135,7 +143,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
         uint256[3] calldata quantities,
         uint256 referenceTokenPrice,
         uint8 referenceNormalizationFactor,
-        string calldata trxHash,
+        string calldata txHash,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -168,19 +176,13 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
                     quantities,
                     referenceTokenPrice,
                     referenceNormalizationFactor,
-                    trxHash,
+                    txHash,
                     deadline
                 )
             ),
             v,
             r,
             s
-        );
-
-        (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(
-            token,
-            referenceTokenPrice,
-            referenceNormalizationFactor
         );
 
         uint256 totalAmount;
@@ -190,22 +192,24 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
             uint256 quantity = quantities[i];
 
             if (quantity > 0) {
-                totalAmount += (prices[i] * quantity);
-
                 uint256 userBalance = minerNft.balanceOf(msg.sender, i);
 
                 if (quantity > userBalance) {
                     revert InvalidPurchase();
                 }
+
+                totalAmount += (prices[i] * quantity);
             }
         }
 
+        (uint256 latestPrice, uint8 normalizationFactor) = _validatePrice(
+            token,
+            referenceTokenPrice,
+            referenceNormalizationFactor
+        );
+
         uint256 insuranceAmount = (totalAmount * insuranceFeePPM) / PPM;
         insuranceAmount = (insuranceAmount * (10 ** normalizationFactor)) / latestPrice;
-
-        if (insuranceAmount == 0) {
-            revert ZeroValue();
-        }
 
         if (token == ETH) {
             payable(insuranceFundsWallet).sendValue(insuranceAmount);
@@ -221,8 +225,10 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
             token: token,
             by: msg.sender,
             quantities: quantities,
+            prices: prices,
             insuranceAmount: insuranceAmount,
-            trxHash: trxHash
+            latestPrice: latestPrice,
+            txHash: txHash
         });
     }
 
@@ -270,6 +276,7 @@ contract Insurance is Ownable2Step, ReentrancyGuardTransient {
 
         insuranceFundsWallet = newInsuranceFundsWallet;
     }
+
     /// @notice Changes the insurance fee
     /// @param newInsuranceFee The new Insurance fee
     function updateInsuranceFee(uint256 newInsuranceFee) external onlyOwner {
