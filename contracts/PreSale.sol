@@ -826,7 +826,6 @@ contract PreSale is Ownable2Step, ReentrancyGuardTransient {
         }
 
         ClaimInfo[] memory claimInfo = new ClaimInfo[](toLength);
-
         uint256 sumPercentage;
 
         for (uint256 i; i < toLength; ++i) {
