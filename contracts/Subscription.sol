@@ -41,7 +41,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     event SignerUpdated(address oldSigner, address newSigner);
 
     /// @dev Emitted when address of funds wallet is updated
-    event fundsWalletUpdated(address oldfundsWallet, address newfundsWallet);
+    event FundsWalletUpdated(address oldfundsWallet, address newfundsWallet);
 
     /// @dev Emitted when blacklist access of address is updated
     event BlacklistUpdated(address which, bool accessNow);
@@ -222,7 +222,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         signerWallet = newSigner;
     }
 
-    /// @notice Changes node funds wallet address
+    /// @notice Changes funds wallet address
     /// @param newfundsWallet The address of the new funds wallet
     function updatefundsWallet(
         address newfundsWallet
@@ -233,7 +233,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
             revert IdenticalValue();
         }
 
-        emit fundsWalletUpdated({
+        emit FundsWalletUpdated({
             oldfundsWallet: oldfundsWallet,
             newfundsWallet: newfundsWallet
         });
