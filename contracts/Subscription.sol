@@ -14,10 +14,10 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     /// @dev The constant value helps in calculating subscription time for each index
-    uint256 private SUBSCRIPTION_TIME = 3600;
+    uint256 private constant SUBSCRIPTION_TIME = 86400;
 
     /// @notice The address of the GEMS contract
-    IERC20 public GEMS;
+    IERC20 public constant GEMS;
 
     /// @notice The subscription fee in USD
     uint256 public subscriptionFee;
@@ -34,8 +34,8 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     /// @notice Gives info about address's permission
     mapping(address => bool) public blacklistAddress;
 
-    /// @notice Stores the end time of the user's subscribed index
-    mapping(address => uint256) public subscriptionTimes;
+    /// @notice Stores the end time of the user's subscription
+    mapping(address => uint256) public subEndTimes;
 
     /// @dev Emitted when address of signer is updated
     event SignerUpdated(address oldSigner, address newSigner);
@@ -145,7 +145,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
             revert DeadlineExpired();
         }
 
-        if (subscriptionTimes[msg.sender] > block.timestamp) {
+        if (subEndTimes[msg.sender] > block.timestamp) {
             revert AlreadySubscribed();
         }
 
@@ -184,13 +184,13 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         }
 
         GEMS.safeTransferFrom(msg.sender, fundsWallet, purchaseAmount);
-        subscriptionTimes[msg.sender] = block.timestamp + SUBSCRIPTION_TIME;
+        subEndTimes[msg.sender] = block.timestamp + SUBSCRIPTION_TIME;
 
         emit Subscribed({
             tokenPrice: referenceTokenPrice,
             by: msg.sender,
             amountPurchased: purchaseAmount,
-            endTime: subscriptionTimes[msg.sender]
+            endTime: subEndTimes[msg.sender]
         });
     }
 
@@ -243,7 +243,7 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
 
     /// @notice Changes the subscription fee
     /// @param newFee The new subscription fee
-    function updateFee(uint256 newFee) external onlyOwner {
+    function updateSubscriptionFee(uint256 newFee) external onlyOwner {
         uint256 oldFee = subscriptionFee;
 
         if (newFee == oldFee) {
@@ -275,16 +275,6 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
         emit BlacklistUpdated({which: which, accessNow: access});
 
         blacklistAddress[which] = access;
-    }
-
-    function updateGEMS(
-        IERC20 newGEMS
-    ) external checkAddressZero(address(newGEMS)) onlyOwner {
-        GEMS = newGEMS;
-    }
-
-    function updateSubscriptionTime(uint256 newTime) external onlyOwner {
-        SUBSCRIPTION_TIME = newTime;
     }
 
     /// @dev Checks zero address, if zero then reverts
