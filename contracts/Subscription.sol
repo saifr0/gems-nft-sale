@@ -14,10 +14,10 @@ contract Subscription is Ownable2Step, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     /// @dev The constant value helps in calculating subscription time for each index
-    uint256 private constant SUBSCRIPTION_TIME = 86400;
+    uint256 private constant SUBSCRIPTION_TIME = 31536000;
 
-    /// @notice The address of the GEMS contract
-    IERC20 public constant GEMS;
+    /// @notice The address of the GEMS token
+    IERC20 public immutable GEMS;
 
     /// @notice The subscription fee in USD
     uint256 public subscriptionFee;

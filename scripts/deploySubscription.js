@@ -10,10 +10,10 @@ async function verify(address, constructorArguments) {
   });
 }
 async function main() {
-  const fundsWalletAddress = "0x5d63cE81FAbaCf586A8fd4039Db08B59BE909D5b";
-  const signerAddress = "0x12eF0F1C99D8FD50fFd37cCd12B09Ef7f1213269";
-  const owner = "0x12ef0f1c99d8fd50ffd37ccd12b09ef7f1213269";
-  const gemsAddress = "0x7ddd14e3a173a5db7bb8fd74b82b667f221492b9";
+  const fundsWalletAddress = "";
+  const signerAddress = "";
+  const owner = "";
+  const gemsAddress = "";
   const subscriptionFeeInit = 400000000;
 
   const Subscription = await hre.ethers.deployContract("Subscription", [
